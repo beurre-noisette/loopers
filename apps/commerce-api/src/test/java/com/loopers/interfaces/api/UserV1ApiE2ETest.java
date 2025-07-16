@@ -1,6 +1,7 @@
 package com.loopers.interfaces.api;
 
 import com.loopers.domain.user.Gender;
+import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserRepository;
 import com.loopers.interfaces.api.user.UserV1Dto;
 import com.loopers.utils.DatabaseCleanUp;
@@ -24,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class UserV1ApiE2ETest {
-    private static final String ENDPOINT_REGISTER = "/api/v1/users";
+    private static final String ENDPOINT = "/api/v1/users";
 
     private final TestRestTemplate testRestTemplate;
     private final DatabaseCleanUp databaseCleanUp;
@@ -60,7 +61,7 @@ class UserV1ApiE2ETest {
             ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType = new ParameterizedTypeReference<>() {
             };
             ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
-                    testRestTemplate.exchange(ENDPOINT_REGISTER, HttpMethod.POST, new HttpEntity<>(request), responseType);
+                    testRestTemplate.exchange(ENDPOINT, HttpMethod.POST, new HttpEntity<>(request), responseType);
 
             // assert
             assertAll(
@@ -91,11 +92,58 @@ class UserV1ApiE2ETest {
             ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType = new ParameterizedTypeReference<>() {
             };
             ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
-                    testRestTemplate.exchange(ENDPOINT_REGISTER, HttpMethod.POST, new HttpEntity<>(request), responseType);
+                    testRestTemplate.exchange(ENDPOINT, HttpMethod.POST, new HttpEntity<>(request), responseType);
 
             // assert
             assertTrue(response.getStatusCode().is4xxClientError());
             assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        }
+    }
+
+    @DisplayName("GET /api/v1/users")
+    @Nested
+    class GetUser {
+        @DisplayName("내 정보 조회에 성공할 경우, 해당하는 유저 정보를 응답으로 반환한다.")
+        @Test
+        void returnUser_whenGetUser() {
+            // arrange
+            String userId = "testUser";
+            User savedUser = userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE));
+
+            // act
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
+                    testRestTemplate.exchange(
+                            ENDPOINT + "/" + userId,
+                            HttpMethod.GET,
+                            new HttpEntity<>(null),
+                            responseType);
+
+            // assert
+            assertAll(
+                    () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
+                    () -> assertEquals(userId, response.getBody().data().userId()),
+                    () -> assertEquals(savedUser.getEmail(), response.getBody().data().email())
+            );
+        }
+
+        @DisplayName("존재하지 않는 ID로 조회할 경우, 404 Not Found 응답을 반환한다.")
+        @Test
+        void return404NotFound_whenProvidedNonExistsUserId() {
+            String nonExistentUserId = "nonExistent";
+
+            // act
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType =
+                    new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
+                    testRestTemplate.exchange(
+                            ENDPOINT + "/" + nonExistentUserId,
+                            HttpMethod.GET,
+                            new HttpEntity<>(null),
+                            responseType);
+
+            // assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         }
     }
 }

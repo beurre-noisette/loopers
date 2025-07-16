@@ -3,12 +3,12 @@ package com.loopers.interfaces.api.user;
 import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserService;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.support.error.CoreException;
+import com.loopers.support.error.ErrorType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -26,5 +26,16 @@ public class UserV1Controller implements UserV1ApiSpec {
         User registerUser = userService.register(request.userId(), request.email(), request.birthDate(), request.gender());
 
         return ApiResponse.success(UserV1Dto.UserResponse.from(registerUser));
+    }
+
+    @GetMapping("/{userId}")
+    public ApiResponse<UserV1Dto.UserResponse> getUser(@PathVariable("userId") String userId) {
+        Optional<User> foundUser = userService.findByUserId(userId);
+
+        if (foundUser.isEmpty()) {
+            throw new CoreException(ErrorType.USER_NOT_FOUND, userId);
+        }
+
+        return ApiResponse.success(UserV1Dto.UserResponse.from(foundUser.get()));
     }
 }

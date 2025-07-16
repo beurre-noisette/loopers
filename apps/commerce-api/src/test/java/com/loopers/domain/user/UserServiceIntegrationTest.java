@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
+import java.util.Optional;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
@@ -72,6 +74,44 @@ class UserServiceIntegrationTest {
 
             // assert
             assertEquals(ErrorType.ALREADY_REGISTERED_USER, exception.getErrorType());
+        }
+    }
+
+    @DisplayName("회원이 내 정보를 조회할 때")
+    @Nested
+    class GetUser {
+        @DisplayName("해당 ID의 회원이 존재할 경우, 회원 정보가 반환된다.")
+        @Test
+        void returnUserInfo_whenUserExists() {
+            // arrange
+            String userId = "testUser";
+            User savedUser = userService.register(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+
+            // act
+            Optional<User> foundUser = userService.findByUserId(userId);
+
+            // assert
+            assertThat(foundUser)
+                    .isPresent()
+                    .hasValueSatisfying(user -> {
+                        assertThat(user.getUserId()).isEqualTo(savedUser.getUserId());
+                        assertThat(user.getEmail()).isEqualTo(savedUser.getEmail());
+                    });
+            verify(userRepository).findByUserId(userId);
+        }
+
+        @DisplayName("해당 ID의 회원이 존재하지 않을 경우, null이 반환된다.")
+        @Test
+        void returnEmpty_whenUserDoesNotExist() {
+            // arrange
+            String nonExistUserId = "nonExistUserId";
+
+            // act
+            Optional<User> foundUser = userService.findByUserId(nonExistUserId);
+
+            // assert
+            assertThat(foundUser).isEmpty();
+            verify(userRepository).findByUserId(nonExistUserId);
         }
     }
 }

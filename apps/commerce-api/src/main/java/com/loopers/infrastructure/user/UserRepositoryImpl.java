@@ -5,6 +5,8 @@ import com.loopers.domain.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 public class UserRepositoryImpl implements UserRepository {
 
@@ -23,5 +25,10 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public boolean existsByUserId(String userId) {
         return userJpaRepository.existsByUserId(userId);
+    }
+
+    @Override
+    public Optional<User> findByUserId(String userId) {
+        return Optional.ofNullable(userJpaRepository.findByUserId(userId));
     }
 }
