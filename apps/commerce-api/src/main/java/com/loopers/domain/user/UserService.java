@@ -24,7 +24,7 @@ public class UserService {
             throw new CoreException(ErrorType.ALREADY_REGISTERED_USER, userId);
         }
         
-        User user = new User(userId, email, birthDate, gender);
+        User user = new User(userId, email, birthDate, gender, 0);
 
         return userRepository.save(user);
     }

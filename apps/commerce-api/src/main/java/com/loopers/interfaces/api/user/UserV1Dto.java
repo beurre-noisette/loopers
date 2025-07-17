@@ -25,6 +25,18 @@ public class UserV1Dto {
         }
     }
 
+    public record UserPointResponse(
+            String userId,
+            Integer point
+    ) {
+        public static UserPointResponse from(User user) {
+            return new UserPointResponse(
+                    user.getUserId(),
+                    user.getPoint()
+            );
+        }
+    }
+
     public record UserRegisterRequest(
             @NotBlank
             @NotNull

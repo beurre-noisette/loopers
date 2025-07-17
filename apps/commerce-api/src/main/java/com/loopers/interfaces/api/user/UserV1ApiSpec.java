@@ -18,11 +18,20 @@ public interface UserV1ApiSpec {
     );
 
     @Operation(
-            summary = "유저 조회",
-            description = "유저가 회원가입 시 입력한 아이디로 유저 정보를 조회해옵니다."
+            summary = "내 정보 조회",
+            description = "현재 인증된 사용자의 정보를 조회합니다."
     )
     ApiResponse<UserV1Dto.UserResponse> getUser(
-            @Schema(name = "유저 조회", description = "회원가입시 유저가 등록한 아이디")
+            @Schema(name = "사용자 ID", description = "X-USER-ID 헤더로 전달되는 현재 사용자 식별자")
+            String userId
+    );
+
+    @Operation(
+            summary = "내 포인트 조회",
+            description = "현재 인증된 사용자의 보유 포인트를 조회합니다."
+    )
+    ApiResponse<UserV1Dto.UserPointResponse> getUserPoints(
+            @Schema(name = "사용자 ID", description = "X-USER-ID 헤더로 전달되는 현재 사용자 식별자")
             String userId
     );
 }

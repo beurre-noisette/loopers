@@ -28,8 +28,8 @@ public class UserV1Controller implements UserV1ApiSpec {
         return ApiResponse.success(UserV1Dto.UserResponse.from(registerUser));
     }
 
-    @GetMapping("/{userId}")
-    public ApiResponse<UserV1Dto.UserResponse> getUser(@PathVariable("userId") String userId) {
+    @GetMapping("")
+    public ApiResponse<UserV1Dto.UserResponse> getUser(@RequestHeader("X-USER-ID") String userId) {
         Optional<User> foundUser = userService.findByUserId(userId);
 
         if (foundUser.isEmpty()) {
@@ -37,5 +37,16 @@ public class UserV1Controller implements UserV1ApiSpec {
         }
 
         return ApiResponse.success(UserV1Dto.UserResponse.from(foundUser.get()));
+    }
+
+    @GetMapping("/points")
+    public ApiResponse<UserV1Dto.UserPointResponse> getUserPoints(@RequestHeader("X-USER-ID") String userId) {
+        Optional<User> foundUser = userService.findByUserId(userId);
+
+        if (foundUser.isEmpty()) {
+            throw new CoreException(ErrorType.USER_NOT_FOUND, userId);
+        }
+
+        return ApiResponse.success(UserV1Dto.UserPointResponse.from(foundUser.get()));
     }
 }

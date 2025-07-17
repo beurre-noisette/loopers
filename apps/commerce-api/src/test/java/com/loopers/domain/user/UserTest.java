@@ -26,7 +26,7 @@ class UserTest {
             Gender gender = Gender.MALE;
 
             // act
-            User user = new User(userId, email, birthDateStr, gender);
+            User user = new User(userId, email, birthDateStr, gender, 0);
 
             // assert
             assertAll(
@@ -46,7 +46,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User(nullId, "email@gmail.com", "1996-08-16", Gender.MALE);
+                new User(nullId, "email@gmail.com", "1996-08-16", Gender.MALE, 0);
             });
 
             // assert
@@ -61,7 +61,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User(blankId, "email@gmail.com", "1996-08-16", Gender.MALE);
+                new User(blankId, "email@gmail.com", "1996-08-16", Gender.MALE, 0);
             });
 
             // assert
@@ -76,7 +76,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User(tooLongUserId, "email@gmail.com", "1996-08-16", Gender.MALE);
+                new User(tooLongUserId, "email@gmail.com", "1996-08-16", Gender.MALE, 0);
             });
 
             // assert
@@ -91,7 +91,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User(invalidUserId, "email@gmail.com", "1996-08-16", Gender.MALE);
+                new User(invalidUserId, "email@gmail.com", "1996-08-16", Gender.MALE, 0);
             });
 
             // assert
@@ -106,7 +106,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", nullEmail, "1996-08-16", Gender.MALE);
+                new User("correctId", nullEmail, "1996-08-16", Gender.MALE, 0);
             });
 
             // assert
@@ -121,7 +121,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", emptyEmail, "1996-08-16", Gender.MALE);
+                new User("correctId", emptyEmail, "1996-08-16", Gender.MALE, 0);
             });
 
             // assert
@@ -136,7 +136,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", invalidEmail, "1996-08-16", Gender.MALE);
+                new User("correctId", invalidEmail, "1996-08-16", Gender.MALE, 0);
             });
 
             // assert
@@ -151,7 +151,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", "good@email.com", nullBirthDate, Gender.MALE);
+                new User("correctId", "good@email.com", nullBirthDate, Gender.MALE, 0);
             });
 
             // assert
@@ -166,7 +166,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", "good@email.com", invalidBirthDate,Gender.MALE);
+                new User("correctId", "good@email.com", invalidBirthDate,Gender.MALE, 0);
             });
 
             // assert
@@ -181,7 +181,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", "good@email.com", invalidBirthDate, Gender.MALE);
+                new User("correctId", "good@email.com", invalidBirthDate, Gender.MALE, 0);
             });
 
             // assert
@@ -196,7 +196,7 @@ class UserTest {
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", "good@email.com", invalidBirthDate, Gender.MALE);
+                new User("correctId", "good@email.com", invalidBirthDate, Gender.MALE, 0);
             });
 
             // assert

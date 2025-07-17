@@ -1,7 +1,6 @@
 package com.loopers.domain.user;
 
 import com.loopers.domain.BaseEntity;
-import com.loopers.interfaces.api.user.UserV1Dto;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import jakarta.persistence.*;
@@ -28,10 +27,12 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private Gender gender;
 
+    private Integer point;
+
     protected User() {
     }
 
-    public User(String userId, String email, String birthDateStr, Gender gender) {
+    public User(String userId, String email, String birthDateStr, Gender gender, Integer point) {
         validateUserId(userId);
         validateEmail(email);
         this.birthDate = validateAndParseBirthDate(birthDateStr);
@@ -40,6 +41,7 @@ public class User extends BaseEntity {
         this.userId = userId;
         this.email = email;
         this.gender = gender;
+        this.point = point;
     }
 
     private void validateUserId(String userId) {

@@ -13,10 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 
 import java.time.LocalDate;
 
@@ -108,15 +105,17 @@ class UserV1ApiE2ETest {
         void returnUser_whenGetUser() {
             // arrange
             String userId = "testUser";
-            User savedUser = userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE));
+            User savedUser = userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-USER-ID", userId);
 
             // act
             ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType = new ParameterizedTypeReference<>() {};
             ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
                     testRestTemplate.exchange(
-                            ENDPOINT + "/" + userId,
+                            ENDPOINT,
                             HttpMethod.GET,
-                            new HttpEntity<>(null),
+                            new HttpEntity<>(null, headers),
                             responseType);
 
             // assert
@@ -131,19 +130,69 @@ class UserV1ApiE2ETest {
         @Test
         void return404NotFound_whenProvidedNonExistsUserId() {
             String nonExistentUserId = "nonExistent";
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-USER-ID", nonExistentUserId);
 
             // act
             ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType =
                     new ParameterizedTypeReference<>() {};
             ResponseEntity<ApiResponse<UserV1Dto.UserResponse>> response =
                     testRestTemplate.exchange(
-                            ENDPOINT + "/" + nonExistentUserId,
+                            ENDPOINT,
                             HttpMethod.GET,
-                            new HttpEntity<>(null),
+                            new HttpEntity<>(null, headers),
                             responseType);
 
             // assert
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @DisplayName("GET /api/v1/users/points")
+    @Nested
+    class GetUserPoint {
+        @DisplayName("포인트 조회에 성공할 경우, 보유 포인트를 응답으로 반환한다.")
+        @Test
+        void returnUserPoint_whenUserExists() {
+            // arrange
+            String userId = "testUser";
+            User savedUser = userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-USER-ID", userId);
+
+            // act
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserPointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserPointResponse>> response =
+                    testRestTemplate.exchange(
+                            ENDPOINT + "/points",
+                            HttpMethod.GET,
+                            new HttpEntity<>(null, headers),
+                            responseType);
+
+            // assert
+            assertAll(
+                    () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
+                    () -> assertEquals(userId, response.getBody().data().userId()),
+                    () -> assertEquals(savedUser.getPoint(), response.getBody().data().point())
+            );
+        }
+
+        @DisplayName("`X-USER-ID` 헤더가 없을 경우, `400 Bad Request` 응답을 반환한다.")
+        @Test
+        void return400BadRequest_whenNotGivenUserId() {
+            // arrange
+
+
+            // act
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserPointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserPointResponse>> response = testRestTemplate.exchange(
+                    ENDPOINT + "/points",
+                    HttpMethod.GET,
+                    new HttpEntity<>(null),
+                    responseType);
+
+            // assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         }
     }
 }

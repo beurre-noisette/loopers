@@ -114,4 +114,42 @@ class UserServiceIntegrationTest {
             verify(userRepository).findByUserId(nonExistUserId);
         }
     }
+
+    @DisplayName("사용자의 포인트를 조회할 때")
+    @Nested
+    class GetUserPoint {
+        @DisplayName("해당 ID의 회원이 존재할 경우, 보유 포인트가 반환된다.")
+        @Test
+        void returnUsersPoints_whenUserExists() {
+            // arrange
+            String userId = "testUser";
+            User savedUser = userService.register(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+
+            // act
+            Optional<User> foundUser = userService.findByUserId(userId);
+
+            // assert
+            assertThat(foundUser)
+                    .isPresent()
+                    .hasValueSatisfying(user -> {
+                        assertThat(user.getUserId()).isEqualTo(savedUser.getUserId());
+                        assertThat(user.getPoint()).isEqualTo(0);
+                    });
+            verify(userRepository).findByUserId(userId);
+        }
+
+        @DisplayName("해당 ID 의 회원이 존재하지 않을 경우, null 이 반환된다.")
+        @Test
+        void returnEmpty_whenUserDoesNotExist() {
+            // arrange
+            String nonExistUserId = "nonExistUserId";
+
+            // act
+            Optional<User>  foundUser = userService.findByUserId(nonExistUserId);
+
+            // assert
+            assertThat(foundUser).isEmpty();
+            verify(userRepository).findByUserId(nonExistUserId);
+        }
+    }
 }
