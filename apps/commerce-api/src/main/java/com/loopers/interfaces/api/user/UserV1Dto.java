@@ -1,7 +1,7 @@
 package com.loopers.interfaces.api.user;
 
+import com.loopers.application.user.UserInfo;
 import com.loopers.domain.user.Gender;
-import com.loopers.domain.user.User;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -15,12 +15,12 @@ public class UserV1Dto {
             LocalDate birthDate,
             Gender gender
     ) {
-        public static UserResponse from(User user) {
+        public static UserResponse from(UserInfo userInfo) {
             return new UserResponse(
-                    user.getUserId(),
-                    user.getEmail(),
-                    user.getBirthDate(),
-                    user.getGender()
+                    userInfo.userId(),
+                    userInfo.email(),
+                    userInfo.birthDate(),
+                    userInfo.gender()
             );
         }
     }
@@ -29,10 +29,10 @@ public class UserV1Dto {
             String userId,
             Integer point
     ) {
-        public static UserPointResponse from(User user) {
+        public static UserPointResponse from(UserInfo userInfo) {
             return new UserPointResponse(
-                    user.getUserId(),
-                    user.getPoint()
+                    userInfo.userId(),
+                    userInfo.point()
             );
         }
     }
