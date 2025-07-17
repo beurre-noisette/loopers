@@ -33,4 +33,16 @@ public class UserService {
     public Optional<User> findByUserId(String userId) {
         return userRepository.findByUserId(userId);
     }
+
+    @Transactional
+    public User chargePoint(String userId, int amount) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND, userId));
+
+        user.chargePoint(amount);
+        
+        userRepository.save(user);
+
+        return user;
+    }
 }

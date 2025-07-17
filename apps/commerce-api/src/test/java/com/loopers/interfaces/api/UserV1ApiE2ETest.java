@@ -4,6 +4,7 @@ import com.loopers.domain.user.Gender;
 import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserRepository;
 import com.loopers.interfaces.api.user.UserV1Dto;
+import com.loopers.support.error.ErrorType;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -193,6 +194,63 @@ class UserV1ApiE2ETest {
 
             // assert
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @DisplayName("포인트 충전 요청이 왔을 때")
+    @Nested
+    class ChargePoint {
+        @DisplayName("존재하는 유저가 1000원을 충전할 경우, 충전된 보유 총량을 응답으로 반환한다.")
+        @Test
+        void returnUserIdAndPoint_whenUserExists() {
+            // arrange
+            String userId = "testUser";
+            User savedUser = userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-USER-ID", userId);
+
+            UserV1Dto.UserPointChargeRequest request = new UserV1Dto.UserPointChargeRequest(1_000);
+
+            // act
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserPointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserPointResponse>> response =
+                    testRestTemplate.exchange(
+                            ENDPOINT + "/points",
+                            HttpMethod.POST,
+                            new HttpEntity<>(request, headers),
+                            responseType
+                    );
+
+            // assert
+            assertAll(
+                    () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
+                    () -> assertEquals(response.getBody().data().userId(), savedUser.getUserId()),
+                    () -> assertThat(response.getBody().data().point()).isEqualTo(1_000)
+            );
+        }
+
+        @DisplayName("존재하지 않는 유저로 요청할 경우, `404 Not Found` 응답을 반환한다.")
+        @Test
+        void return404NotFound_whenProvidedNonExistsUserId() {
+            // arrange
+            String nonExistsUserId = "nonExistsUser";
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-USER-ID", nonExistsUserId);
+            UserV1Dto.UserPointChargeRequest request = new UserV1Dto.UserPointChargeRequest(1_000);
+
+            // act
+            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserPointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<UserV1Dto.UserPointResponse>> response = testRestTemplate.exchange(
+                    ENDPOINT + "/points",
+                    HttpMethod.POST,
+                    new HttpEntity<>(request, headers),
+                    responseType
+            );
+
+            // assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(response.getBody().meta().errorCode()).isEqualTo(ErrorType.USER_NOT_FOUND.getCode());
         }
     }
 }

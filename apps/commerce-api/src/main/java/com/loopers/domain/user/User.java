@@ -44,6 +44,18 @@ public class User extends BaseEntity {
         this.point = point;
     }
 
+    public void chargePoint(int amount) {
+        validateAmount(amount);
+
+        this.point += amount;
+    }
+
+    private void validateAmount(int amount) {
+        if (amount  <= 0) {
+            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "0원 이하는 충전할 수 없습니다.");
+        }
+    }
+
     private void validateUserId(String userId) {
         if (userId == null || userId.isBlank()) {
             throw new CoreException(ErrorType.BAD_REQUEST, "userId는 비어있을 수 없습니다.");

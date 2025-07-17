@@ -53,4 +53,8 @@ public class UserV1Dto {
             @NotNull
             Gender gender
     ) {}
+
+    public record UserPointChargeRequest (
+            int amount
+    ) {}
 }

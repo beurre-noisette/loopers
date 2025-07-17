@@ -203,4 +203,34 @@ class UserTest {
             assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT);
         }
     }
+
+    @DisplayName("포인트를 충전할 때")
+    @Nested
+    class ChargePoint {
+        @DisplayName("0 이하의 정수로 포인트를 충전 시 실패한다.")
+        @Test
+        void throwInvalidInputFormatException_whenChargePointIsUnderZero() {
+            // arrange
+            String userId = "testUser";
+            String email = "test@gmail.com";
+            String birthDate = "1996-08-16";
+            Gender gender = Gender.MALE;
+            User user = new User(userId, email, birthDate, gender, 0);
+
+            // act
+            CoreException negativeException = assertThrows(CoreException.class, () -> {
+                user.chargePoint(-1);
+            });
+
+            CoreException zeroException = assertThrows(CoreException.class, () -> {
+                user.chargePoint(0);
+            });
+
+            // assert
+            assertAll(
+                    () -> assertThat(negativeException.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT),
+                    () -> assertThat(zeroException.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT)
+            );
+        }
+    }
 }

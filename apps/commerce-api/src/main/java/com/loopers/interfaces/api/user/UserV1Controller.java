@@ -49,4 +49,14 @@ public class UserV1Controller implements UserV1ApiSpec {
 
         return ApiResponse.success(UserV1Dto.UserPointResponse.from(foundUser.get()));
     }
+
+    @PostMapping("/points")
+    public ApiResponse<UserV1Dto.UserPointResponse> chargePoints(
+            @RequestHeader("X-USER-ID") String userId,
+            @RequestBody UserV1Dto.UserPointChargeRequest request)
+    {
+        User updatedUser = userService.chargePoint(userId, request.amount());
+
+        return ApiResponse.success(UserV1Dto.UserPointResponse.from(updatedUser));
+    }
 }

@@ -34,4 +34,15 @@ public interface UserV1ApiSpec {
             @Schema(name = "사용자 ID", description = "X-USER-ID 헤더로 전달되는 현재 사용자 식별자")
             String userId
     );
+
+    @Operation(
+            summary = "포인트 충전",
+            description = "유저의 포인트를 충전합니다."
+    )
+    ApiResponse<UserV1Dto.UserPointResponse> chargePoints(
+            @Schema(name = "사용자 ID", description = "X-USER-ID 헤더로 전달되는 현재 사용자 식별자")
+            String userId,
+            @Schema(name = "충전할 포인트", description = "충전할 포인트 단, 0이하의 값은 불허합니다.")
+            UserV1Dto.UserPointChargeRequest request
+    );
 }

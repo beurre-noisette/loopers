@@ -138,18 +138,55 @@ class UserServiceIntegrationTest {
             verify(userRepository).findByUserId(userId);
         }
 
-        @DisplayName("해당 ID 의 회원이 존재하지 않을 경우, null 이 반환된다.")
+        @DisplayName("해당 ID 의 회원이 존재하지 않을 경우, null이 반환된다.")
         @Test
         void returnEmpty_whenUserDoesNotExist() {
             // arrange
             String nonExistUserId = "nonExistUserId";
 
             // act
-            Optional<User>  foundUser = userService.findByUserId(nonExistUserId);
+            Optional<User> foundUser = userService.findByUserId(nonExistUserId);
 
             // assert
             assertThat(foundUser).isEmpty();
             verify(userRepository).findByUserId(nonExistUserId);
+        }
+    }
+
+    @DisplayName("포인트를 충전할 때")
+    @Nested
+    class ChargePoints {
+        @DisplayName("존재하지 않는 유저 ID 로 충전을 시도한 경우, 실패한다.")
+        @Test
+        void failToCharge_whenUserDoesNotExist() {
+            // arrange
+            String nonExistUserId = "nonExistUserId";
+
+            // act
+            CoreException exception = assertThrows(CoreException.class, () -> {
+                userService.chargePoint(nonExistUserId, 1_000);
+            });
+
+            // assert
+            assertThat(exception.getErrorType()).isEqualTo(ErrorType.USER_NOT_FOUND);
+        }
+
+        @DisplayName("존재하는 유저 ID로 충전을 시도하면 업데이트 된 User 엔티티를 반환한다")
+        @Test
+        void returnUpdatedUser_whenChargePointToExistingUser() {
+            // arrange
+            String userId = "testUser";
+            User savedUser = userService.register(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+
+            clearInvocations(userRepository);
+
+            // act
+            User updatedUser = userService.chargePoint(userId, 1_000);
+
+            // assert
+            assertThat(updatedUser.getUserId()).isEqualTo(savedUser.getUserId());
+            assertThat(updatedUser.getPoint()).isEqualTo(1_000);
+            verify(userRepository, times(1)).save(any(User.class));
         }
     }
 }
