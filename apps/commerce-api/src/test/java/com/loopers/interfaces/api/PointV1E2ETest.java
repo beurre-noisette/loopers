@@ -143,5 +143,89 @@ class PointV1E2ETest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
             assertThat(response.getBody().meta().errorCode()).isEqualTo(ErrorType.USER_NOT_FOUND.getCode());
         }
+
+        @DisplayName("0원을 충전 요청할 경우, `400 Bad Request` 응답을 반환한다.")
+        @Test
+        void return400BadRequest_whenProvidedZeroAmount() {
+            // arrange
+            String userId = "testUser";
+            userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-USER-ID", userId);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            
+            UserV1Dto.UserPointChargeRequest request = new UserV1Dto.UserPointChargeRequest(0);
+
+            // act
+            ParameterizedTypeReference<ApiResponse<Object>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<Object>> response = testRestTemplate.exchange(
+                    ENDPOINT,
+                    HttpMethod.POST,
+                    new HttpEntity<>(request, headers),
+                    responseType
+            );
+
+            // assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().meta().errorCode()).isEqualTo(ErrorType.BAD_REQUEST.getCode());
+            assertThat(response.getBody().meta().message()).contains("충전 금액은 1원 이상이어야 합니다");
+        }
+
+        @DisplayName("음수로 충전 요청할 경우, `400 Bad Request` 응답을 반환한다.")
+        @Test
+        void return400BadRequest_whenProvidedNegativeAmount() {
+            // arrange
+            String userId = "testUser";
+            userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-USER-ID", userId);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            UserV1Dto.UserPointChargeRequest request = new UserV1Dto.UserPointChargeRequest(-100);
+
+            // act
+            ParameterizedTypeReference<ApiResponse<Object>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<Object>> response = testRestTemplate.exchange(
+                    ENDPOINT,
+                    HttpMethod.POST,
+                    new HttpEntity<>(request, headers),
+                    responseType
+            );
+
+            // assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().meta().errorCode()).isEqualTo(ErrorType.BAD_REQUEST.getCode());
+            assertThat(response.getBody().meta().message()).contains("충전 금액은 1원 이상이어야 합니다");
+        }
+
+        @DisplayName("null 값으로 충전 요청할 경우, `400 Bad Request` 응답을 반환한다.")
+        @Test
+        void return400BadRequest_whenProvidedNullAmount() {
+            // arrange
+            String userId = "testUser";
+            userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-USER-ID", userId);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            String request = "{\"amount\": null}";
+
+            // act
+            ParameterizedTypeReference<ApiResponse<Object>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<Object>> response = testRestTemplate.exchange(
+                    ENDPOINT,
+                    HttpMethod.POST,
+                    new HttpEntity<>(request, headers),
+                    responseType
+            );
+
+            // assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().meta().errorCode()).isEqualTo(ErrorType.BAD_REQUEST.getCode());
+            assertThat(response.getBody().meta().message()).contains("필수 필드 'amount'이(가) 누락되었습니다");
+        }
     }
 }

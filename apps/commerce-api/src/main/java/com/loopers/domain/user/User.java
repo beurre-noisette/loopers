@@ -27,12 +27,13 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private Gender gender;
 
-    private Integer point;
+    @Column(nullable = false)
+    private int point;
 
     protected User() {
     }
 
-    public User(String userId, String email, String birthDateStr, Gender gender, Integer point) {
+    public User(String userId, String email, String birthDateStr, Gender gender, int point) {
         validateUserId(userId);
         validateEmail(email);
         this.birthDate = validateAndParseBirthDate(birthDateStr);

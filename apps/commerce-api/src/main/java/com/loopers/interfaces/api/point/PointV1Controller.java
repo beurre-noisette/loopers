@@ -6,6 +6,7 @@ import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.user.UserV1Dto;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +37,7 @@ public class PointV1Controller {
     @PostMapping("")
     public ApiResponse<UserV1Dto.UserPointResponse> chargePoints(
             @RequestHeader("X-USER-ID") String userId,
-            @RequestBody UserV1Dto.UserPointChargeRequest request)
+            @Valid @RequestBody UserV1Dto.UserPointChargeRequest request)
     {
         UserInfo updatedUser = userFacade.chargePoint(userId, request.amount());
 

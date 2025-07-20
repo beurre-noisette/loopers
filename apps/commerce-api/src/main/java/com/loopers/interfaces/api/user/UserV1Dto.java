@@ -2,6 +2,7 @@ package com.loopers.interfaces.api.user;
 
 import com.loopers.application.user.UserInfo;
 import com.loopers.domain.user.Gender;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -55,6 +56,7 @@ public class UserV1Dto {
     ) {}
 
     public record UserPointChargeRequest (
+            @Min(value = 1, message = "충전 금액은 1원 이상이어야 합니다.")
             int amount
     ) {}
 }
