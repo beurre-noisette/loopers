@@ -19,7 +19,7 @@ public class UserService {
     }
 
     @Transactional
-    public User register(String userId, String email, String birthDate, Gender gender) {
+    public User signUp(String userId, String email, String birthDate, Gender gender) {
         if (userRepository.existsByUserId(userId)) {
             throw new CoreException(ErrorType.ALREADY_REGISTERED_USER, userId);
         }

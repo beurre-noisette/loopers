@@ -3,6 +3,8 @@ package com.loopers.application.user;
 import com.loopers.domain.user.Gender;
 import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserService;
+import com.loopers.support.error.CoreException;
+import com.loopers.support.error.ErrorType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,14 +15,15 @@ import java.util.Optional;
 public class UserFacade {
     private final UserService userService;
 
-    public UserInfo register(String userId, String email, String birthDate, Gender gender) {
-        User user = userService.register(userId, email, birthDate, gender);
+    public UserInfo signUp(String userId, String email, String birthDate, Gender gender) {
+        User user = userService.signUp(userId, email, birthDate, gender);
         return UserInfo.from(user);
     }
 
-    public Optional<UserInfo> findByUserId(String userId) {
-        Optional<User> user = userService.findByUserId(userId);
-        return user.map(UserInfo::from);
+    public UserInfo getMyInfo(String userId) {
+        User user = userService.findByUserId(userId)
+                .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND, userId));
+        return UserInfo.from(user);
     }
 
     public UserInfo chargePoint(String userId, int amount) {

@@ -25,13 +25,8 @@ public class PointV1Controller {
 
     @GetMapping("")
     public ApiResponse<UserV1Dto.UserPointResponse> getUserPoints(@RequestHeader("X-USER-ID") String userId) {
-        Optional<UserInfo> foundUser = userFacade.findByUserId(userId);
-
-        if (foundUser.isEmpty()) {
-            throw new CoreException(ErrorType.USER_NOT_FOUND, userId);
-        }
-
-        return ApiResponse.success(UserV1Dto.UserPointResponse.from(foundUser.get()));
+        UserInfo userInfo = userFacade.getMyInfo(userId);
+        return ApiResponse.success(UserV1Dto.UserPointResponse.from(userInfo));
     }
 
     @PostMapping("")

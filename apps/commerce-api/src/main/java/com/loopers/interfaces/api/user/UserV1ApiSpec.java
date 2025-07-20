@@ -12,7 +12,7 @@ public interface UserV1ApiSpec {
             summary = "회원 가입",
             description = "회원 가입을 진행합니다."
     )
-    ApiResponse<UserV1Dto.UserResponse> register(
+    ApiResponse<UserV1Dto.UserResponse> signUp(
             @Schema(name = "회원가입 요청", description = "회원가입 할 사용자 정보")
             UserV1Dto.UserRegisterRequest request
     );
@@ -21,7 +21,7 @@ public interface UserV1ApiSpec {
             summary = "내 정보 조회",
             description = "현재 인증된 사용자의 정보를 조회합니다."
     )
-    ApiResponse<UserV1Dto.UserResponse> getUser(
+    ApiResponse<UserV1Dto.UserResponse> getMyInfo(
             @Schema(name = "사용자 ID", description = "X-USER-ID 헤더로 전달되는 현재 사용자 식별자")
             String userId
     );

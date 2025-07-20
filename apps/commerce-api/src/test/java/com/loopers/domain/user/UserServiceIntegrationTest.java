@@ -47,7 +47,7 @@ class UserServiceIntegrationTest {
             Gender gender = Gender.MALE;
 
             // act
-            User savedUser = userService.register(userId, email, birthDate, gender);
+            User savedUser = userService.signUp(userId, email, birthDate, gender);
 
             // assert
             assertThat(savedUser.getUserId()).isEqualTo(userId);
@@ -65,11 +65,11 @@ class UserServiceIntegrationTest {
             String birthDate = "1996-08-16";
             Gender gender = Gender.MALE;
 
-            userService.register(userId, email, birthDate, gender);
+            userService.signUp(userId, email, birthDate, gender);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                userService.register(userId, email, birthDate, gender);
+                userService.signUp(userId, email, birthDate, gender);
             });
 
             // assert
@@ -85,7 +85,7 @@ class UserServiceIntegrationTest {
         void returnUserInfo_whenUserExists() {
             // arrange
             String userId = "testUser";
-            User savedUser = userService.register(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+            User savedUser = userService.signUp(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
 
             // act
             Optional<User> foundUser = userService.findByUserId(userId);
@@ -123,7 +123,7 @@ class UserServiceIntegrationTest {
         void returnUsersPoints_whenUserExists() {
             // arrange
             String userId = "testUser";
-            User savedUser = userService.register(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+            User savedUser = userService.signUp(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
 
             // act
             Optional<User> foundUser = userService.findByUserId(userId);
@@ -176,7 +176,7 @@ class UserServiceIntegrationTest {
         void returnUpdatedUser_whenChargePointToExistingUser() {
             // arrange
             String userId = "testUser";
-            User savedUser = userService.register(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+            User savedUser = userService.signUp(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
 
             clearInvocations(userRepository);
 
