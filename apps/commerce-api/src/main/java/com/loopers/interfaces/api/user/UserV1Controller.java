@@ -38,25 +38,4 @@ public class UserV1Controller implements UserV1ApiSpec {
 
         return ApiResponse.success(UserV1Dto.UserResponse.from(foundUser.get()));
     }
-
-    @GetMapping("/points")
-    public ApiResponse<UserV1Dto.UserPointResponse> getUserPoints(@RequestHeader("X-USER-ID") String userId) {
-        Optional<UserInfo> foundUser = userFacade.findByUserId(userId);
-
-        if (foundUser.isEmpty()) {
-            throw new CoreException(ErrorType.USER_NOT_FOUND, userId);
-        }
-
-        return ApiResponse.success(UserV1Dto.UserPointResponse.from(foundUser.get()));
-    }
-
-    @PostMapping("/points")
-    public ApiResponse<UserV1Dto.UserPointResponse> chargePoints(
-            @RequestHeader("X-USER-ID") String userId,
-            @RequestBody UserV1Dto.UserPointChargeRequest request)
-    {
-        UserInfo updatedUser = userFacade.chargePoint(userId, request.amount());
-
-        return ApiResponse.success(UserV1Dto.UserPointResponse.from(updatedUser));
-    }
 }
