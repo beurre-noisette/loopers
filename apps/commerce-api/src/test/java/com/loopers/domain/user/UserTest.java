@@ -246,8 +246,14 @@ class UserTest {
     @Nested
     class ChargePoint {
         @DisplayName("0 이하의 정수로 포인트를 충전 시 실패한다.")
-        @Test
-        void throwInvalidInputFormatException_whenChargePointIsUnderZero() {
+        @ParameterizedTest
+        @ValueSource(ints = {
+                -1000,
+                -100,
+                -1,
+                0
+        })
+        void throwInvalidInputFormatException_whenChargePointIsUnderZero(int invalidAmount) {
             // arrange
             String userId = "testUser";
             String email = "test@gmail.com";
@@ -257,20 +263,12 @@ class UserTest {
 
             User user = User.of(command);
 
-            // act
-            CoreException negativeException = assertThrows(CoreException.class, () -> {
-                user.chargePoint(-1);
+            // act & assert
+            CoreException exception = assertThrows(CoreException.class, () -> {
+                user.chargePoint(invalidAmount);
             });
 
-            CoreException zeroException = assertThrows(CoreException.class, () -> {
-                user.chargePoint(0);
-            });
-
-            // assert
-            assertAll(
-                    () -> assertThat(negativeException.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT),
-                    () -> assertThat(zeroException.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT)
-            );
+            assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT);
         }
     }
 }
