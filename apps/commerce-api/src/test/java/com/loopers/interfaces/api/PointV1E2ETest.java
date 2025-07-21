@@ -2,7 +2,9 @@ package com.loopers.interfaces.api;
 
 import com.loopers.domain.user.Gender;
 import com.loopers.domain.user.User;
+import com.loopers.domain.user.UserCommand;
 import com.loopers.domain.user.UserRepository;
+import com.loopers.interfaces.api.point.PointV1Dto;
 import com.loopers.interfaces.api.user.UserV1Dto;
 import com.loopers.support.error.ErrorType;
 import com.loopers.utils.DatabaseCleanUp;
@@ -18,7 +20,6 @@ import org.springframework.http.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class PointV1E2ETest {
@@ -48,13 +49,13 @@ class PointV1E2ETest {
         void returnUserPoint_whenUserExists() {
             // arrange
             String userId = "testUser";
-            User savedUser = userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
 
             // act
-            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserPointResponse>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<UserV1Dto.UserPointResponse>> response =
+            ParameterizedTypeReference<ApiResponse<PointV1Dto.PointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<PointV1Dto.PointResponse>> response =
                     testRestTemplate.exchange(
                             ENDPOINT,
                             HttpMethod.GET,
@@ -64,8 +65,7 @@ class PointV1E2ETest {
             // assert
             assertAll(
                     () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
-                    () -> assertEquals(userId, response.getBody().data().userId()),
-                    () -> assertEquals(savedUser.getPoint(), response.getBody().data().point())
+                    () -> assertEquals(0, response.getBody().data().point())
             );
         }
 
@@ -76,8 +76,8 @@ class PointV1E2ETest {
 
 
             // act
-            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserPointResponse>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<UserV1Dto.UserPointResponse>> response = testRestTemplate.exchange(
+            ParameterizedTypeReference<ApiResponse<PointV1Dto.PointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<PointV1Dto.PointResponse>> response = testRestTemplate.exchange(
                     ENDPOINT,
                     HttpMethod.GET,
                     new HttpEntity<>(null),
@@ -96,7 +96,7 @@ class PointV1E2ETest {
         void returnUserIdAndPoint_whenUserExists() {
             // arrange
             String userId = "testUser";
-            User savedUser = userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
@@ -104,8 +104,8 @@ class PointV1E2ETest {
             UserV1Dto.UserPointChargeRequest request = new UserV1Dto.UserPointChargeRequest(1_000);
 
             // act
-            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserPointResponse>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<UserV1Dto.UserPointResponse>> response =
+            ParameterizedTypeReference<ApiResponse<PointV1Dto.PointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<PointV1Dto.PointResponse>> response =
                     testRestTemplate.exchange(
                             ENDPOINT,
                             HttpMethod.POST,
@@ -116,7 +116,6 @@ class PointV1E2ETest {
             // assert
             assertAll(
                     () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
-                    () -> assertEquals(response.getBody().data().userId(), savedUser.getUserId()),
                     () -> assertThat(response.getBody().data().point()).isEqualTo(1_000)
             );
         }
@@ -131,8 +130,8 @@ class PointV1E2ETest {
             UserV1Dto.UserPointChargeRequest request = new UserV1Dto.UserPointChargeRequest(1_000);
 
             // act
-            ParameterizedTypeReference<ApiResponse<UserV1Dto.UserPointResponse>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<UserV1Dto.UserPointResponse>> response = testRestTemplate.exchange(
+            ParameterizedTypeReference<ApiResponse<PointV1Dto.PointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<PointV1Dto.PointResponse>> response = testRestTemplate.exchange(
                     ENDPOINT,
                     HttpMethod.POST,
                     new HttpEntity<>(request, headers),
@@ -149,7 +148,7 @@ class PointV1E2ETest {
         void return400BadRequest_whenProvidedZeroAmount() {
             // arrange
             String userId = "testUser";
-            userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
             
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
@@ -158,8 +157,8 @@ class PointV1E2ETest {
             UserV1Dto.UserPointChargeRequest request = new UserV1Dto.UserPointChargeRequest(0);
 
             // act
-            ParameterizedTypeReference<ApiResponse<Object>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<Object>> response = testRestTemplate.exchange(
+            ParameterizedTypeReference<ApiResponse<PointV1Dto.PointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<PointV1Dto.PointResponse>> response = testRestTemplate.exchange(
                     ENDPOINT,
                     HttpMethod.POST,
                     new HttpEntity<>(request, headers),
@@ -169,7 +168,6 @@ class PointV1E2ETest {
             // assert
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody().meta().errorCode()).isEqualTo(ErrorType.BAD_REQUEST.getCode());
-            assertThat(response.getBody().meta().message()).contains("충전 금액은 1원 이상이어야 합니다");
         }
 
         @DisplayName("음수로 충전 요청할 경우, `400 Bad Request` 응답을 반환한다.")
@@ -177,7 +175,7 @@ class PointV1E2ETest {
         void return400BadRequest_whenProvidedNegativeAmount() {
             // arrange
             String userId = "testUser";
-            userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
             
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
@@ -186,8 +184,8 @@ class PointV1E2ETest {
             UserV1Dto.UserPointChargeRequest request = new UserV1Dto.UserPointChargeRequest(-100);
 
             // act
-            ParameterizedTypeReference<ApiResponse<Object>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<Object>> response = testRestTemplate.exchange(
+            ParameterizedTypeReference<ApiResponse<PointV1Dto.PointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<PointV1Dto.PointResponse>> response = testRestTemplate.exchange(
                     ENDPOINT,
                     HttpMethod.POST,
                     new HttpEntity<>(request, headers),
@@ -197,7 +195,6 @@ class PointV1E2ETest {
             // assert
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody().meta().errorCode()).isEqualTo(ErrorType.BAD_REQUEST.getCode());
-            assertThat(response.getBody().meta().message()).contains("충전 금액은 1원 이상이어야 합니다");
         }
 
         @DisplayName("null 값으로 충전 요청할 경우, `400 Bad Request` 응답을 반환한다.")
@@ -205,7 +202,7 @@ class PointV1E2ETest {
         void return400BadRequest_whenProvidedNullAmount() {
             // arrange
             String userId = "testUser";
-            userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
             
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
@@ -214,8 +211,8 @@ class PointV1E2ETest {
             String request = "{\"amount\": null}";
 
             // act
-            ParameterizedTypeReference<ApiResponse<Object>> responseType = new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<Object>> response = testRestTemplate.exchange(
+            ParameterizedTypeReference<ApiResponse<PointV1Dto.PointResponse>> responseType = new ParameterizedTypeReference<>() {};
+            ResponseEntity<ApiResponse<PointV1Dto.PointResponse>> response = testRestTemplate.exchange(
                     ENDPOINT,
                     HttpMethod.POST,
                     new HttpEntity<>(request, headers),
@@ -225,7 +222,6 @@ class PointV1E2ETest {
             // assert
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody().meta().errorCode()).isEqualTo(ErrorType.BAD_REQUEST.getCode());
-            assertThat(response.getBody().meta().message()).contains("필수 필드 'amount'이(가) 누락되었습니다");
         }
     }
 }

@@ -2,6 +2,7 @@ package com.loopers.interfaces.api.user;
 
 import com.loopers.application.user.UserFacade;
 import com.loopers.application.user.UserInfo;
+import com.loopers.domain.user.UserCommand;
 import com.loopers.interfaces.api.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -18,8 +19,10 @@ public class UserV1Controller implements UserV1ApiSpec {
     }
 
     @PostMapping("")
-    public ApiResponse<UserV1Dto.UserResponse> signUp(@RequestBody UserV1Dto.UserRegisterRequest request) {
-        UserInfo userInfo = userFacade.signUp(request.userId(), request.email(), request.birthDate(), request.gender());
+    public ApiResponse<UserV1Dto.UserResponse> signUp(@RequestBody UserV1Dto.UserSignUpRequest request) {
+        UserCommand.Create command = request.toCommand();
+
+        UserInfo userInfo = userFacade.signUp(command);
 
         return ApiResponse.success(UserV1Dto.UserResponse.from(userInfo));
     }

@@ -2,7 +2,7 @@ package com.loopers.interfaces.api.user;
 
 import com.loopers.application.user.UserInfo;
 import com.loopers.domain.user.Gender;
-import jakarta.validation.constraints.Min;
+import com.loopers.domain.user.UserCommand;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -26,19 +26,7 @@ public class UserV1Dto {
         }
     }
 
-    public record UserPointResponse(
-            String userId,
-            Integer point
-    ) {
-        public static UserPointResponse from(UserInfo userInfo) {
-            return new UserPointResponse(
-                    userInfo.userId(),
-                    userInfo.point()
-            );
-        }
-    }
-
-    public record UserRegisterRequest(
+    public record UserSignUpRequest(
             @NotBlank
             @NotNull
             String userId,
@@ -53,10 +41,18 @@ public class UserV1Dto {
 
             @NotNull
             Gender gender
-    ) {}
+    ) {
+        public UserCommand.Create toCommand() {
+            return new UserCommand.Create(
+                    userId,
+                    email,
+                    birthDate,
+                    gender
+            );
+        }
+    }
 
     public record UserPointChargeRequest (
-            @Min(value = 1, message = "충전 금액은 1원 이상이어야 합니다.")
             int amount
     ) {}
 }

@@ -24,9 +24,10 @@ class UserTest {
             String email = "goodEmail@gmail.com";
             String birthDateStr = "1996-08-16";
             Gender gender = Gender.MALE;
+            UserCommand.Create command = new UserCommand.Create(userId, email, birthDateStr, gender);
 
             // act
-            User user = new User(userId, email, birthDateStr, gender, 0);
+            User user = User.of(command);
 
             // assert
             assertAll(
@@ -42,11 +43,11 @@ class UserTest {
         @Test
         void throwBadRequestException_whenUserIdIsNull() {
             // arrange
-            String nullId = null;
+            UserCommand.Create command = new UserCommand.Create(null, "email@gmail.com", "1996-08-16", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User(nullId, "email@gmail.com", "1996-08-16", Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -57,11 +58,11 @@ class UserTest {
         @Test
         void throwBadRequestException_whenUserIdIsEmpty() {
             // arrange
-            String blankId = "";
+            UserCommand.Create command = new UserCommand.Create("", "email@gmail.com", "1996-08-16", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User(blankId, "email@gmail.com", "1996-08-16", Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -72,11 +73,11 @@ class UserTest {
         @Test
         void throwInvalidInputFormatException_whenUserIdIsTooLong() {
             // arrange
-            String tooLongUserId = "tooLongUserId";
+            UserCommand.Create command = new UserCommand.Create("toooooLongUserId", "email@gmail.com", "1996-08-16", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User(tooLongUserId, "email@gmail.com", "1996-08-16", Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -87,11 +88,11 @@ class UserTest {
         @Test
         void throwInvalidInputFormatException_whenUserIdContainsInvalidChars() {
             // arrange
-            String invalidUserId = "ㅎuserId";
+            UserCommand.Create command = new UserCommand.Create("ㅎuserId", "email@gmail.com", "1996-08-16", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User(invalidUserId, "email@gmail.com", "1996-08-16", Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -102,11 +103,11 @@ class UserTest {
         @Test
         void throwBadRequestException_whenEmailIsNull() {
             // arrange
-            String nullEmail = null;
+            UserCommand.Create command = new UserCommand.Create("userId", null, "1996-08-16", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", nullEmail, "1996-08-16", Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -117,11 +118,11 @@ class UserTest {
         @Test
         void throwBadRequestException_whenEmailIsEmpty() {
             // arrange
-            String emptyEmail = "";
+            UserCommand.Create command = new UserCommand.Create("userId", "", "1996-08-16", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", emptyEmail, "1996-08-16", Gender.MALE, 0);
+               User.of(command);
             });
 
             // assert
@@ -132,11 +133,11 @@ class UserTest {
         @Test
         void throwInvalidInputFormatException_whenEmailContainsInvalidChars() {
             // arrange
-            String invalidEmail = "dd@dd";
+            UserCommand.Create command = new UserCommand.Create("ㅎuserId", "edd@d", "1996-08-16", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", invalidEmail, "1996-08-16", Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -147,11 +148,11 @@ class UserTest {
         @Test
         void throwBadRequestException_whenBirthDateIsNull() {
             // arrange
-            String nullBirthDate = null;
+            UserCommand.Create command = new UserCommand.Create("userId", "email@gmail.com", null, Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", "good@email.com", nullBirthDate, Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -162,11 +163,11 @@ class UserTest {
         @Test
         void throwInvalidInputFormatException_whenBirthDateFormatIsInvalid() {
             // arrange
-            String invalidBirthDate = "1996/08/16";
+            UserCommand.Create command = new UserCommand.Create("ㅎuserId", "email@gmail.com", "1996/08/16", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", "good@email.com", invalidBirthDate,Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -177,11 +178,11 @@ class UserTest {
         @Test
         void throwInvalidInputFormatException_whenBirthDateHasInvalidMonth() {
             // arrange
-            String invalidBirthDate = "1996-13-01";
+            UserCommand.Create command = new UserCommand.Create("ㅎuserId", "email@gmail.com", "1996-13-01", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", "good@email.com", invalidBirthDate, Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -192,11 +193,11 @@ class UserTest {
         @Test
         void throwInvalidInputFormatException_whenBirthDateHasInvalidDay() {
             // arrange
-            String invalidBirthDate = "1996-02-31";
+            UserCommand.Create command = new UserCommand.Create("ㅎuserId", "email@gmail.com", "1996-02-31", Gender.MALE);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                new User("correctId", "good@email.com", invalidBirthDate, Gender.MALE, 0);
+                User.of(command);
             });
 
             // assert
@@ -215,7 +216,9 @@ class UserTest {
             String email = "test@gmail.com";
             String birthDate = "1996-08-16";
             Gender gender = Gender.MALE;
-            User user = new User(userId, email, birthDate, gender, 0);
+            UserCommand.Create command = new UserCommand.Create(userId, email, birthDate, gender);
+
+            User user = User.of(command);
 
             // act
             CoreException negativeException = assertThrows(CoreException.class, () -> {

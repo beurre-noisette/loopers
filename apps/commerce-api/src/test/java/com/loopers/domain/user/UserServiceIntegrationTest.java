@@ -46,8 +46,10 @@ class UserServiceIntegrationTest {
             String birthDate = "1996-08-16";
             Gender gender = Gender.MALE;
 
+            UserCommand.Create command = new UserCommand.Create(userId, email, birthDate, gender);
+
             // act
-            User savedUser = userService.signUp(userId, email, birthDate, gender);
+            User savedUser = userService.signUp(command);
 
             // assert
             assertThat(savedUser.getUserId()).isEqualTo(userId);
@@ -65,11 +67,13 @@ class UserServiceIntegrationTest {
             String birthDate = "1996-08-16";
             Gender gender = Gender.MALE;
 
-            userService.signUp(userId, email, birthDate, gender);
+            UserCommand.Create command = new UserCommand.Create(userId, email, birthDate, gender);
+
+            userService.signUp(command);
 
             // act
             CoreException exception = assertThrows(CoreException.class, () -> {
-                userService.signUp(userId, email, birthDate, gender);
+                userService.signUp(command);
             });
 
             // assert
@@ -85,7 +89,8 @@ class UserServiceIntegrationTest {
         void returnUserInfo_whenUserExists() {
             // arrange
             String userId = "testUser";
-            User savedUser = userService.signUp(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+            UserCommand.Create command = new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+            User savedUser = userService.signUp(command);
 
             // act
             Optional<User> foundUser = userService.findByUserId(userId);
@@ -123,7 +128,8 @@ class UserServiceIntegrationTest {
         void returnUsersPoints_whenUserExists() {
             // arrange
             String userId = "testUser";
-            User savedUser = userService.signUp(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+            UserCommand.Create command = new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+            User savedUser = userService.signUp(command);
 
             // act
             Optional<User> foundUser = userService.findByUserId(userId);
@@ -176,7 +182,9 @@ class UserServiceIntegrationTest {
         void returnUpdatedUser_whenChargePointToExistingUser() {
             // arrange
             String userId = "testUser";
-            User savedUser = userService.signUp(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+            UserCommand.Create command = new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+
+            User savedUser = userService.signUp(command);
 
             clearInvocations(userRepository);
 

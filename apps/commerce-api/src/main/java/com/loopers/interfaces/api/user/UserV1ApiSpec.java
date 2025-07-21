@@ -14,7 +14,7 @@ public interface UserV1ApiSpec {
     )
     ApiResponse<UserV1Dto.UserResponse> signUp(
             @Schema(name = "회원가입 요청", description = "회원가입 할 사용자 정보")
-            UserV1Dto.UserRegisterRequest request
+            UserV1Dto.UserSignUpRequest request
     );
 
     @Operation(

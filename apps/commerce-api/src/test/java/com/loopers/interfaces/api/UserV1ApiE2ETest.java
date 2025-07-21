@@ -2,6 +2,7 @@ package com.loopers.interfaces.api;
 
 import com.loopers.domain.user.Gender;
 import com.loopers.domain.user.User;
+import com.loopers.domain.user.UserCommand;
 import com.loopers.domain.user.UserRepository;
 import com.loopers.interfaces.api.user.UserV1Dto;
 import com.loopers.utils.DatabaseCleanUp;
@@ -47,7 +48,7 @@ class UserV1ApiE2ETest {
         @Test
         void returnUser_whenRegisterUser() {
             // arrange
-            UserV1Dto.UserRegisterRequest request = new UserV1Dto.UserRegisterRequest(
+            UserV1Dto.UserSignUpRequest request = new UserV1Dto.UserSignUpRequest(
                     "testUser",
                     "test@gmail.com",
                     "1996-08-16",
@@ -78,7 +79,7 @@ class UserV1ApiE2ETest {
         @Test
         void return400BadRequest_whenNotGivenGenderForRegisterUser() {
             // arrange
-            UserV1Dto.UserRegisterRequest request = new UserV1Dto.UserRegisterRequest(
+            UserV1Dto.UserSignUpRequest request = new UserV1Dto.UserSignUpRequest(
                     "testUser",
                     "test@gmail.com",
                     "1996-08-16",
@@ -105,7 +106,7 @@ class UserV1ApiE2ETest {
         void returnUser_whenGetUser() {
             // arrange
             String userId = "testUser";
-            User savedUser = userRepository.save(new User(userId, "test@gmail.com", "1996-08-16", Gender.MALE, 0));
+            User savedUser = userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
 

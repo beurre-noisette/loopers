@@ -1,22 +1,21 @@
 package com.loopers.application.user;
 
-import com.loopers.domain.user.Gender;
 import com.loopers.domain.user.User;
+import com.loopers.domain.user.UserCommand;
 import com.loopers.domain.user.UserService;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @Component
 public class UserFacade {
     private final UserService userService;
 
-    public UserInfo signUp(String userId, String email, String birthDate, Gender gender) {
-        User user = userService.signUp(userId, email, birthDate, gender);
+    public UserInfo signUp(UserCommand.Create command) {
+        User user = userService.signUp(command);
         return UserInfo.from(user);
     }
 
@@ -26,8 +25,15 @@ public class UserFacade {
         return UserInfo.from(user);
     }
 
-    public UserInfo chargePoint(String userId, int amount) {
+    public UserPointInfo getMyPoint(String userId) {
+        return userService.findByUserId(userId)
+                .map(user -> UserPointInfo.from(user))
+                .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND));
+    }
+
+    public UserPointInfo chargePoint(String userId, int amount) {
         User user = userService.chargePoint(userId, amount);
-        return UserInfo.from(user);
+
+        return UserPointInfo.from(user);
     }
 }

@@ -1,20 +1,15 @@
 package com.loopers.interfaces.api.point;
 
 import com.loopers.application.user.UserFacade;
-import com.loopers.application.user.UserInfo;
+import com.loopers.application.user.UserPointInfo;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.user.UserV1Dto;
-import com.loopers.support.error.CoreException;
-import com.loopers.support.error.ErrorType;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
 @RestController
 @RequestMapping("/api/v1/points")
-public class PointV1Controller {
+public class PointV1Controller implements PointV1ApiSpec {
 
     private final UserFacade userFacade;
 
@@ -24,18 +19,19 @@ public class PointV1Controller {
     }
 
     @GetMapping("")
-    public ApiResponse<UserV1Dto.UserPointResponse> getUserPoints(@RequestHeader("X-USER-ID") String userId) {
-        UserInfo userInfo = userFacade.getMyInfo(userId);
-        return ApiResponse.success(UserV1Dto.UserPointResponse.from(userInfo));
+    public ApiResponse<PointV1Dto.PointResponse> getMyPoint(@RequestHeader("X-USER-ID") String userId) {
+        UserPointInfo userPointInfo = userFacade.getMyPoint(userId);
+
+        return ApiResponse.success(PointV1Dto.PointResponse.from(userPointInfo));
     }
 
     @PostMapping("")
-    public ApiResponse<UserV1Dto.UserPointResponse> chargePoints(
+    public ApiResponse<PointV1Dto.PointResponse> chargePoints(
             @RequestHeader("X-USER-ID") String userId,
-            @Valid @RequestBody UserV1Dto.UserPointChargeRequest request)
+            @RequestBody UserV1Dto.UserPointChargeRequest request)
     {
-        UserInfo updatedUser = userFacade.chargePoint(userId, request.amount());
+        UserPointInfo userPointInfo = userFacade.chargePoint(userId, request.amount());
 
-        return ApiResponse.success(UserV1Dto.UserPointResponse.from(updatedUser));
+        return ApiResponse.success(PointV1Dto.PointResponse.from(userPointInfo));
     }
 }

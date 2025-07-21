@@ -19,12 +19,12 @@ public class UserService {
     }
 
     @Transactional
-    public User signUp(String userId, String email, String birthDate, Gender gender) {
-        if (userRepository.existsByUserId(userId)) {
-            throw new CoreException(ErrorType.ALREADY_REGISTERED_USER, userId);
+    public User signUp(UserCommand.Create command) {
+        if (userRepository.existsByUserId(command.userId())) {
+            throw new CoreException(ErrorType.ALREADY_REGISTERED_USER, command.userId());
         }
         
-        User user = new User(userId, email, birthDate, gender, 0);
+        User user = User.of(command);
 
         return userRepository.save(user);
     }
