@@ -76,7 +76,7 @@ public class User extends BaseEntity {
             throw new CoreException(ErrorType.BAD_REQUEST, "email은 비어있을 수 없습니다.");
         }
 
-        if (!email.matches("^[^@]+@[^@]+\\.[^@]+$")) {
+        if (!email.matches("^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\\.[a-zA-Z]{2,}$")) {
             throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "올바른 이메일 형식이 아닙니다. 올바른 이메일 형식은 xx@yy.zz와 같습니다.");
         }
     }

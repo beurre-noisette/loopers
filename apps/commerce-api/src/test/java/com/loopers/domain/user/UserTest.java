@@ -5,6 +5,8 @@ import com.loopers.support.error.ErrorType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.LocalDate;
 
@@ -130,18 +132,53 @@ class UserTest {
         }
 
         @DisplayName("올바르지 않은 이메일 형식이 들어올 경우 User 객체 생성에 실패하고 INVALID_INPUT_FORMAT 예외가 발생한다.")
-        @Test
-        void throwInvalidInputFormatException_whenEmailContainsInvalidChars() {
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "test....@test.kr",     // 연속된 점
+                "testgmail.com",        // @ 기호 없음
+                "test@",                // 도메인 없음
+                ".test@gmail.com",      // 점으로 시작
+                "test.@gmail.com",      // @ 앞에서 점으로 끝남
+                "test@gmail.",          // 도메인이 점으로 끝남
+                "test@@gmail.com",      // @ 기호 중복
+                "test@gmail",           // 최상위 도메인 없음
+                "@gmail.com",           // 로컬 부분 없음
+                "test@.com",            // 도메인이 점으로 시작
+                "test@gmail..com",      // 도메인에 연속된 점
+                "test @gmail.com",      // 공백 포함
+                "test@gmai l.com"       // 도메인에 공백 포함
+        })
+        void throwInvalidInputFormatException_whenEmailFormatIsInvalid(String invalidEmail) {
             // arrange
-            UserCommand.Create command = new UserCommand.Create("userId", "edd@d", "1996-08-16", Gender.MALE);
+            UserCommand.Create command = new UserCommand.Create("userId", invalidEmail, "1996-08-16", Gender.MALE);
 
-            // act
+            // act & assert
             CoreException exception = assertThrows(CoreException.class, () -> {
                 User.of(command);
             });
 
-            // assert
             assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT);
+        }
+
+        @DisplayName("올바른 이메일 형식이 들어올 경우 User 객체가 정상적으로 생성된다.")
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "test@gmail.com",
+                "user123@example.org",
+                "my.email@domain.co.kr",
+                "a@b.cc",
+                "test123@test-domain.com",
+                "user_name@company.io"
+        })
+        void createUser_whenEmailFormatIsValid(String validEmail) {
+            // arrange
+            UserCommand.Create command = new UserCommand.Create("userId", validEmail, "1996-08-16", Gender.MALE);
+
+            // act
+            User user = User.of(command);
+
+            // assert
+            assertThat(user.getEmail()).isEqualTo(validEmail);
         }
 
         @DisplayName("생년월일이 null일 경우 User 객체 생성에 실패하고 BAD_REQUEST 예외가 발생한다.")
