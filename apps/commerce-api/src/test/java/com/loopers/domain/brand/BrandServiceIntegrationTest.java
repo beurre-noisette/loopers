@@ -62,7 +62,6 @@ class BrandServiceIntegrationTest {
         void throwDuplicateValueException_whenProvidedDuplicateBrandName() {
             // arrange
             String brandName = "apple";
-            String newBrandName = "apple";
             String description = "Emotional product";
 
             BrandCommand.Create command = new BrandCommand.Create(brandName, description);
