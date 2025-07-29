@@ -1,5 +1,6 @@
 package com.loopers.infrastructure.brand.query;
 
+import com.loopers.application.brand.BrandQueryRepository;
 import com.loopers.domain.brand.QBrand;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;

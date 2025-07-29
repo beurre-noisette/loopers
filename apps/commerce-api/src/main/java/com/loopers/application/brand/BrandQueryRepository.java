@@ -1,4 +1,4 @@
-package com.loopers.infrastructure.brand.query;
+package com.loopers.application.brand;
 
 import java.util.Optional;
 
