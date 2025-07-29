@@ -1,7 +1,6 @@
 package com.loopers.application.brand;
 
 import com.loopers.domain.brand.Brand;
-import com.loopers.infrastructure.brand.query.BrandQueryRepository;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import org.springframework.beans.factory.annotation.Autowired;
