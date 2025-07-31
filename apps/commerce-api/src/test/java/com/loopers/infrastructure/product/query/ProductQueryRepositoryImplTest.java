@@ -12,9 +12,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 @DisplayName("상품 조회 Repository 통합 테스트")
 @SpringBootTest
@@ -140,5 +145,90 @@ class ProductQueryRepositoryImplTest {
         
         // assert
         assertThat(result).isEmpty();
+    }
+
+    @DisplayName("상품 목록 조회 시 좋아요 수가 포함된다.")
+    @Test
+    void findProductsWithLikeCount() {
+        // arrange
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        // act
+        Page<ProductQueryRepository.ProductQueryData> result =
+                productQueryRepository.findProducts(
+                        null,
+                        ProductSortType.LATEST,
+                        pageable);
+
+        Map<Long, ProductQueryRepository.ProductQueryData> productMap =
+                result.getContent().stream().collect(
+                        Collectors.toMap(
+                                ProductQueryRepository.ProductQueryData::id,
+                                Function.identity()
+                        ));
+
+        // assert
+        assertAll (
+                () -> assertThat(result.getContent()).hasSize(6),
+                () -> assertThat(productMap.get(1L).likeCount()).isEqualTo(3L),
+                () -> assertThat(productMap.get(2L).likeCount()).isEqualTo(2L),
+                () -> assertThat(productMap.get(3L).likeCount()).isEqualTo(0L),
+                () -> assertThat(productMap.get(4L).likeCount()).isEqualTo(1L),
+                () -> assertThat(productMap.get(5L).likeCount()).isEqualTo(0L),
+                () -> assertThat(productMap.get(6L).likeCount()).isEqualTo(0L)
+        );
+    }
+
+    @DisplayName("좋아요 수 기준으로 정렬하여 조회한다.")
+    @Test
+    void findProductsOrderByLikesDesc() {
+        // arrange
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        // act
+        Page<ProductQueryRepository.ProductQueryData> result =
+                productQueryRepository.findProducts(
+                        null,
+                        ProductSortType.LIKES_DESC,
+                        pageable
+                );
+
+        List<ProductQueryRepository.ProductQueryData> products = result.getContent();
+
+        // assert
+        assertAll (
+                () -> assertThat(products.getFirst().id()).isEqualTo(1L),
+                () -> assertThat(products.getFirst().likeCount()).isEqualTo(3L),
+
+                () -> assertThat(products.get(1).id()).isEqualTo(2L),
+                () -> assertThat(products.get(1).likeCount()).isEqualTo(2L),
+
+                () -> assertThat(products.get(2).id()).isEqualTo(4L),
+                () -> assertThat(products.get(2).likeCount()).isEqualTo(1L)
+        );
+
+        assertAll(
+                () -> assertThat(products.get(3).likeCount()).isEqualTo(0L),
+                () -> assertThat(products.get(4).likeCount()).isEqualTo(0L),
+                () -> assertThat(products.get(5).likeCount()).isEqualTo(0L)
+        );
+    }
+
+    @DisplayName("상품 상세 조회 시 해당 상품의 좋아요 수가 포함된다.")
+    @Test
+    void findProductDetailWithLikeCount() {
+        // arrange
+        Long productId = 1L;
+
+        // act
+        Optional<ProductQueryRepository.ProductDetailQueryData> result =
+                productQueryRepository.findProductDetailById(productId);
+
+        // assert
+        assertAll(
+                () -> assertThat(result).isPresent(),
+                () -> assertThat(result.get().id()).isEqualTo(productId),
+                () -> assertThat(result.get().likeCount()).isEqualTo(3L)
+        );
     }
 }

@@ -3,11 +3,14 @@ package com.loopers.infrastructure.product.query;
 import com.loopers.application.product.ProductQueryRepository;
 import com.loopers.application.product.ProductSortType;
 import com.loopers.domain.brand.QBrand;
+import com.loopers.domain.like.QLike;
+import com.loopers.domain.like.TargetType;
 import com.loopers.domain.product.QProduct;
+import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -32,7 +35,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     public Page<ProductQueryData> findProducts(Long brandId, ProductSortType sortType, Pageable pageable) {
         QProduct product = QProduct.product;
         QBrand brand = QBrand.brand;
-        
+        QLike like = QLike.like;
+
         List<ProductQueryData> content = jpaQueryFactory
             .select(Projections.constructor(ProductQueryData.class,
                 product.id,
@@ -42,7 +46,13 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 product.stock,
                 brand.id,
                 brand.name,
-                Expressions.asNumber(0L) // FIXME 좋아요 수는 일단 0으로 (추후 Like 엔티티 연동 시 수정)
+                JPAExpressions
+                    .select(like.count())
+                    .from(like)
+                    .where(
+                        like.targetType.eq(TargetType.PRODUCT),
+                        like.targetId.eq(product.id)
+                    )
             ))
             .from(product)
             .join(product.brand, brand)
@@ -74,7 +84,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     public Optional<ProductDetailQueryData> findProductDetailById(Long productId) {
         QProduct product = QProduct.product;
         QBrand brand = QBrand.brand;
-        
+        QLike like = QLike.like;
+
         ProductDetailQueryData result = jpaQueryFactory
             .select(Projections.constructor(ProductDetailQueryData.class,
                 product.id,
@@ -85,7 +96,13 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 brand.id,
                 brand.name,
                 brand.description,
-                Expressions.asNumber(0L) // FIXME 좋아요 수는 일단 0으로 (추후 Like 엔티티 연동 시 수정)
+                JPAExpressions
+                    .select(like.count())
+                    .from(like)
+                    .where(
+                        like.targetType.eq(TargetType.PRODUCT),
+                        like.targetId.eq(product.id)
+                    )
             ))
             .from(product)
             .join(product.brand, brand)
@@ -95,19 +112,30 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 brand.deletedAt.isNull()
             )
             .fetchOne();
-        
+
         return Optional.ofNullable(result);
     }
-    
+
     private BooleanExpression brandIdEq(Long brandId) {
         return brandId != null ? QProduct.product.brand.id.eq(brandId) : null;
     }
-    
+
     private OrderSpecifier<?> getOrderSpecifier(ProductSortType sortType, QProduct product) {
         return switch (sortType) {
             case LATEST -> product.createdAt.desc();
             case PRICE_ASC -> product.price.asc();
-            case LIKES_DESC -> product.createdAt.desc(); // FIXME 좋아요 수 정렬은 추후 구현
+            case LIKES_DESC -> {
+                QLike like = QLike.like;
+                var likeCountSubquery = JPAExpressions
+                    .select(like.count())
+                    .from(like)
+                    .where(
+                        like.targetType.eq(TargetType.PRODUCT),
+                        like.targetId.eq(product.id)
+                    );
+                
+                yield new OrderSpecifier<>(Order.DESC, likeCountSubquery);
+            }
         };
     }
 }
