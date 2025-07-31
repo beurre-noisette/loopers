@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -93,29 +92,27 @@ class UserServiceIntegrationTest {
             User savedUser = userService.signUp(command);
 
             // act
-            Optional<User> foundUser = userService.findByUserId(userId);
+            User foundUser = userService.findByUserId(userId);
 
             // assert
-            assertThat(foundUser)
-                    .isPresent()
-                    .hasValueSatisfying(user -> {
-                        assertThat(user.getUserId()).isEqualTo(savedUser.getUserId());
-                        assertThat(user.getEmail()).isEqualTo(savedUser.getEmail());
-                    });
+            assertThat(foundUser).isNotNull();
+            assertThat(foundUser.getUserId()).isEqualTo(savedUser.getUserId());
+            assertThat(foundUser.getEmail()).isEqualTo(savedUser.getEmail());
             verify(userRepository).findByUserId(userId);
         }
 
-        @DisplayName("해당 ID의 회원이 존재하지 않을 경우, null이 반환된다.")
+        @DisplayName("해당 ID의 회원이 존재하지 않을 경우, USER_NOT_FOUND 예외를 발생시킨다.")
         @Test
-        void returnEmpty_whenUserDoesNotExist() {
+        void throwUserNotFoundException_whenUserDoesNotExist() {
             // arrange
             String nonExistUserId = "nonExistUserId";
 
-            // act
-            Optional<User> foundUser = userService.findByUserId(nonExistUserId);
+            // act & assert
+            CoreException exception = assertThrows(CoreException.class, () -> {
+                userService.findByUserId(nonExistUserId);
+            });
 
-            // assert
-            assertThat(foundUser).isEmpty();
+            assertThat(exception.getErrorType()).isEqualTo(ErrorType.USER_NOT_FOUND);
             verify(userRepository).findByUserId(nonExistUserId);
         }
     }
@@ -132,29 +129,27 @@ class UserServiceIntegrationTest {
             User savedUser = userService.signUp(command);
 
             // act
-            Optional<User> foundUser = userService.findByUserId(userId);
+            User foundUser = userService.findByUserId(userId);
 
             // assert
-            assertThat(foundUser)
-                    .isPresent()
-                    .hasValueSatisfying(user -> {
-                        assertThat(user.getUserId()).isEqualTo(savedUser.getUserId());
-                        assertThat(user.getPoint()).isEqualTo(0);
-                    });
+            assertThat(foundUser).isNotNull();
+            assertThat(foundUser.getUserId()).isEqualTo(savedUser.getUserId());
+            assertThat(foundUser.getPoint()).isEqualTo(0);
             verify(userRepository).findByUserId(userId);
         }
 
-        @DisplayName("해당 ID 의 회원이 존재하지 않을 경우, null이 반환된다.")
+        @DisplayName("해당 ID 의 회원이 존재하지 않을 경우, USER_NOT_FOUND 예외를 발생시킨다.")
         @Test
-        void returnEmpty_whenUserDoesNotExist() {
+        void throwUserNotFoundException_whenUserDoesNotExist() {
             // arrange
             String nonExistUserId = "nonExistUserId";
 
-            // act
-            Optional<User> foundUser = userService.findByUserId(nonExistUserId);
+            // act & assert
+            CoreException exception = assertThrows(CoreException.class, () -> {
+                userService.findByUserId(nonExistUserId);
+            });
 
-            // assert
-            assertThat(foundUser).isEmpty();
+            assertThat(exception.getErrorType()).isEqualTo(ErrorType.USER_NOT_FOUND);
             verify(userRepository).findByUserId(nonExistUserId);
         }
     }

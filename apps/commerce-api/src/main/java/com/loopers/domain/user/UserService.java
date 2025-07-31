@@ -6,8 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 @Service
 public class UserService {
     
@@ -30,19 +28,27 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<User> findByUserId(String userId) {
-        return userRepository.findByUserId(userId);
+    public User findByUserId(String userId) {
+        return userRepository.findByUserId(userId).orElseThrow(
+                () -> new CoreException(ErrorType.USER_NOT_FOUND, userId)
+        );
     }
 
     @Transactional
     public User chargePoint(String userId, int amount) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new CoreException(ErrorType.USER_NOT_FOUND, userId));
+        User user = this.findByUserId(userId);
 
         user.chargePoint(amount);
         
         userRepository.save(user);
 
         return user;
+    }
+
+    @Transactional
+    public User usePoint(User user, int amount) {
+        user.usePoint(amount);
+        
+        return userRepository.save(user);
     }
 }
