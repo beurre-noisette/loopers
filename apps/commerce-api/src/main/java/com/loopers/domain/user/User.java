@@ -55,9 +55,20 @@ public class User extends BaseEntity {
         this.point += amount;
     }
 
+    public void usePoint(int amount) {
+        validateAmount(amount);
+
+        if (this.point < amount) {
+            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, 
+                "포인트가 부족합니다. 보유: " + this.point + ", 필요: " + amount);
+        }
+
+        this.point -= amount;
+    }
+
     private static void validateAmount(int amount) {
         if (amount  <= 0) {
-            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "0원 이하는 충전할 수 없습니다.");
+            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "0원 이하는 충전하거나 사용할 수 없습니다.");
         }
     }
 

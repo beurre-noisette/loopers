@@ -44,4 +44,11 @@ public class UserService {
 
         return user;
     }
+
+    @Transactional
+    public User usePoint(User user, int amount) {
+        user.usePoint(amount);
+        
+        return userRepository.save(user);
+    }
 }
