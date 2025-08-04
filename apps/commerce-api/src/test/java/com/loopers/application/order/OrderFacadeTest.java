@@ -3,6 +3,7 @@ package com.loopers.application.order;
 import com.loopers.domain.order.*;
 import com.loopers.domain.product.Product;
 import com.loopers.domain.product.ProductService;
+import com.loopers.domain.product.StockManagementService;
 import com.loopers.domain.user.Gender;
 import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserCommand;
@@ -23,6 +24,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,6 +38,9 @@ class OrderFacadeTest {
 
     @Mock
     private ProductService productService;
+
+    @Mock
+    private StockManagementService stockManagementService;
 
     @InjectMocks
     private OrderFacade orderFacade;
@@ -58,18 +63,12 @@ class OrderFacadeTest {
             Product product2 = createTestProduct(2L, "상품2", new BigDecimal("5000"));
             List<Product> products = List.of(product1, product2);
 
-            List<OrderItem> orderItems = List.of(
-                    new OrderItem(1L, 2, new BigDecimal("10000")),
-                    new OrderItem(2L, 1, new BigDecimal("5000"))
-            );
-
+            OrderItems orderItems = OrderItems.create(command.items(), products);
             Order expectedOrder = Order.create(userId, orderItems);
 
             when(userService.findByUserId(userId)).thenReturn(user);
-            when(productService.findProductsForOrder(command.items())).thenReturn(products);
-            when(orderService.createOrderItems(command.items(), products)).thenReturn(orderItems);
-            when(orderService.calculateTotalAmount(orderItems)).thenReturn(new BigDecimal("25000"));
-            when(orderService.createOrder(userId, orderItems)).thenReturn(expectedOrder);
+            when(productService.findProductsByIds(List.of(1L, 2L))).thenReturn(products);
+            when(orderService.createOrder(eq(userId), any(OrderItems.class))).thenReturn(expectedOrder);
 
             // act
             OrderInfo result = orderFacade.createOrder(userId, command);
@@ -83,12 +82,11 @@ class OrderFacadeTest {
             );
 
             verify(userService).findByUserId(userId);
-            verify(productService).findProductsForOrder(command.items());
-            verify(orderService).createOrderItems(command.items(), products);
-            verify(orderService).calculateTotalAmount(orderItems);
-            verify(productService).validateAndDecreaseStocks(products, command.items());
+            verify(productService).findProductsByIds(List.of(1L, 2L));
+            verify(stockManagementService).validateStock(eq(products), any(OrderItems.class));
+            verify(stockManagementService).decreaseStock(eq(products), any(OrderItems.class));
             verify(userService).usePoint(user, 25000);
-            verify(orderService).createOrder(userId, orderItems);
+            verify(orderService).createOrder(eq(userId), any(OrderItems.class));
         }
 
         @DisplayName("사용자가 존재하지 않으면 예외가 발생한다.")
@@ -108,7 +106,7 @@ class OrderFacadeTest {
 
             assertThat(exception.getErrorType()).isEqualTo(ErrorType.USER_NOT_FOUND);
             verify(userService).findByUserId(userId);
-            verifyNoInteractions(productService, orderService);
+            verifyNoInteractions(productService, stockManagementService, orderService);
         }
 
         @DisplayName("상품이 존재하지 않으면 예외가 발생한다.")
@@ -122,7 +120,7 @@ class OrderFacadeTest {
             User user = createTestUser(userId, 50000);
 
             when(userService.findByUserId(userId)).thenReturn(user);
-            when(productService.findProductsForOrder(command.items()))
+            when(productService.findProductsByIds(List.of(999L)))
                     .thenThrow(new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
 
             // act & assert
@@ -131,8 +129,8 @@ class OrderFacadeTest {
 
             assertThat(exception.getErrorType()).isEqualTo(ErrorType.NOT_FOUND);
             verify(userService).findByUserId(userId);
-            verify(productService).findProductsForOrder(command.items());
-            verifyNoMoreInteractions(productService, orderService);
+            verify(productService).findProductsByIds(List.of(999L));
+            verifyNoMoreInteractions(productService, stockManagementService, orderService);
         }
 
         @DisplayName("재고가 부족하면 예외가 발생한다.")
@@ -147,27 +145,25 @@ class OrderFacadeTest {
             Product product = createTestProduct(1L, "상품1", new BigDecimal("10000"));
             List<Product> products = List.of(product);
             
-            List<OrderItem> orderItems = List.of(new OrderItem(1L, 10, new BigDecimal("10000")));
+            OrderItems orderItems = OrderItems.create(command.items(), products);
 
             when(userService.findByUserId(userId)).thenReturn(user);
-            when(productService.findProductsForOrder(command.items())).thenReturn(products);
-            when(orderService.createOrderItems(command.items(), products)).thenReturn(orderItems);
-            when(orderService.calculateTotalAmount(orderItems)).thenReturn(new BigDecimal("100000"));
+            when(productService.findProductsByIds(List.of(1L))).thenReturn(products);
             doThrow(new CoreException(ErrorType.INVALID_INPUT_FORMAT, "재고가 부족합니다."))
-                    .when(productService).validateAndDecreaseStocks(products, command.items());
+                    .when(stockManagementService).validateStock(eq(products), any(OrderItems.class));
 
-            // act & assert
+            // act
             CoreException exception = assertThrows(CoreException.class,
                     () -> orderFacade.createOrder(userId, command));
 
+            // assert
             assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT);
             assertThat(exception.getMessage()).contains("재고가 부족합니다");
             
             verify(userService).findByUserId(userId);
-            verify(productService).findProductsForOrder(command.items());
-            verify(orderService).createOrderItems(command.items(), products);
-            verify(orderService).calculateTotalAmount(orderItems);
-            verify(productService).validateAndDecreaseStocks(products, command.items());
+            verify(productService).findProductsByIds(List.of(1L));
+            verify(stockManagementService).validateStock(eq(products), any(OrderItems.class));
+            verify(stockManagementService, never()).decreaseStock(any(), any());
             verify(userService, never()).usePoint(any(), anyInt());
             verify(orderService, never()).createOrder(any(), any());
         }
@@ -184,12 +180,10 @@ class OrderFacadeTest {
             Product product = createTestProduct(1L, "상품1", new BigDecimal("10000"));
             List<Product> products = List.of(product);
             
-            List<OrderItem> orderItems = List.of(new OrderItem(1L, 1, new BigDecimal("10000")));
+            OrderItems orderItems = OrderItems.create(command.items(), products);
 
             when(userService.findByUserId(userId)).thenReturn(user);
-            when(productService.findProductsForOrder(command.items())).thenReturn(products);
-            when(orderService.createOrderItems(command.items(), products)).thenReturn(orderItems);
-            when(orderService.calculateTotalAmount(orderItems)).thenReturn(new BigDecimal("10000"));
+            when(productService.findProductsByIds(List.of(1L))).thenReturn(products);
             doThrow(new CoreException(ErrorType.INVALID_INPUT_FORMAT, "포인트가 부족합니다."))
                     .when(userService).usePoint(user, 10000);
 
@@ -202,10 +196,9 @@ class OrderFacadeTest {
             assertThat(exception.getMessage()).contains("포인트가 부족합니다");
             
             verify(userService).findByUserId(userId);
-            verify(productService).findProductsForOrder(command.items());
-            verify(orderService).createOrderItems(command.items(), products);
-            verify(orderService).calculateTotalAmount(orderItems);
-            verify(productService).validateAndDecreaseStocks(products, command.items());
+            verify(productService).findProductsByIds(List.of(1L));
+            verify(stockManagementService).validateStock(eq(products), any(OrderItems.class));
+            verify(stockManagementService).decreaseStock(eq(products), any(OrderItems.class));
             verify(userService).usePoint(user, 10000);
             verify(orderService, never()).createOrder(any(), any());
         }
@@ -227,32 +220,29 @@ class OrderFacadeTest {
             Product product = createTestProduct(1L, "상품1", new BigDecimal("10000"));
             List<Product> products = List.of(product);
             
-            List<OrderItem> orderItems = List.of(new OrderItem(1L, 1, new BigDecimal("10000")));
+            OrderItems orderItems = OrderItems.create(command.items(), products);
             Order expectedOrder = Order.create(userId, orderItems);
 
             when(userService.findByUserId(userId)).thenReturn(user);
-            when(productService.findProductsForOrder(command.items())).thenReturn(products);
-            when(orderService.createOrderItems(command.items(), products)).thenReturn(orderItems);
-            when(orderService.calculateTotalAmount(orderItems)).thenReturn(new BigDecimal("10000"));
-            when(orderService.createOrder(userId, orderItems)).thenReturn(expectedOrder);
+            when(productService.findProductsByIds(List.of(1L))).thenReturn(products);
+            when(orderService.createOrder(eq(userId), any(OrderItems.class))).thenReturn(expectedOrder);
 
             // act
             orderFacade.createOrder(userId, command);
 
             // assert - 호출 순서 검증
-            var inOrder = inOrder(userService, productService, orderService);
+            var inOrder = inOrder(userService, productService, stockManagementService, orderService);
             inOrder.verify(userService).findByUserId(userId);
-            inOrder.verify(productService).findProductsForOrder(command.items());
-            inOrder.verify(orderService).createOrderItems(command.items(), products);
-            inOrder.verify(orderService).calculateTotalAmount(orderItems);
-            inOrder.verify(productService).validateAndDecreaseStocks(products, command.items());
+            inOrder.verify(productService).findProductsByIds(List.of(1L));
+            inOrder.verify(stockManagementService).validateStock(eq(products), any(OrderItems.class));
+            inOrder.verify(stockManagementService).decreaseStock(eq(products), any(OrderItems.class));
             inOrder.verify(userService).usePoint(user, 10000);
-            inOrder.verify(orderService).createOrder(userId, orderItems);
+            inOrder.verify(orderService).createOrder(eq(userId), any(OrderItems.class));
         }
 
-        @DisplayName("OrderItem이 올바른 정보로 생성된다.")
+        @DisplayName("OrderItems가 올바른 정보로 생성되고 주문에 사용된다.")
         @Test
-        void createOrder_createsCorrectOrderItems() {
+        void createOrder_usesCorrectOrderItems() {
             // arrange
             String userId = "testUser";
             OrderCommand.CreateItem item = new OrderCommand.CreateItem(1L, 3);
@@ -262,21 +252,24 @@ class OrderFacadeTest {
             Product product = createTestProduct(1L, "상품1", new BigDecimal("15000"));
             List<Product> products = List.of(product);
             
-            List<OrderItem> orderItems = List.of(new OrderItem(1L, 3, new BigDecimal("15000")));
+            OrderItems orderItems = OrderItems.create(command.items(), products);
             Order expectedOrder = Order.create(userId, orderItems);
             
             when(userService.findByUserId(userId)).thenReturn(user);
-            when(productService.findProductsForOrder(command.items())).thenReturn(products);
-            when(orderService.createOrderItems(command.items(), products)).thenReturn(orderItems);
-            when(orderService.calculateTotalAmount(orderItems)).thenReturn(new BigDecimal("45000"));
-            when(orderService.createOrder(userId, orderItems)).thenReturn(expectedOrder);
+            when(productService.findProductsByIds(List.of(1L))).thenReturn(products);
+            when(orderService.createOrder(eq(userId), any(OrderItems.class))).thenReturn(expectedOrder);
 
             // act
-            orderFacade.createOrder(userId, command);
+            OrderInfo result = orderFacade.createOrder(userId, command);
 
             // assert
-            verify(orderService).createOrderItems(command.items(), products);
-            verify(orderService).createOrder(userId, orderItems);
+            assertAll(
+                    () -> assertThat(result.totalAmount()).isEqualTo(new BigDecimal("45000")),
+                    () -> assertThat(result.orderItems()).hasSize(1),
+                    () -> assertThat(result.orderItems().get(0).quantity()).isEqualTo(3),
+                    () -> assertThat(result.orderItems().get(0).unitPrice()).isEqualTo(new BigDecimal("15000"))
+            );
+            verify(orderService).createOrder(eq(userId), any(OrderItems.class));
         }
     }
 

@@ -23,7 +23,7 @@ public record OrderInfo(
                 order.getUserId(),
                 order.getStatus(),
                 order.getTotalAmount(),
-                order.getOrderItems(),
+                order.getOrderItems().getItems(),
                 order.getCreatedAt(),
                 order.getUpdatedAt()
         );
