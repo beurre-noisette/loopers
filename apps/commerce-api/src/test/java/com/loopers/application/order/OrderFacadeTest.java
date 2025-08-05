@@ -1,6 +1,7 @@
 package com.loopers.application.order;
 
 import com.loopers.domain.order.*;
+import com.loopers.domain.point.PointService;
 import com.loopers.domain.product.Product;
 import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.StockManagementService;
@@ -41,6 +42,9 @@ class OrderFacadeTest {
 
     @Mock
     private StockManagementService stockManagementService;
+
+    @Mock
+    private PointService pointService;
 
     @InjectMocks
     private OrderFacade orderFacade;
@@ -85,7 +89,7 @@ class OrderFacadeTest {
             verify(productService).findProductsByIds(List.of(1L, 2L));
             verify(stockManagementService).validateStock(eq(products), any(OrderItems.class));
             verify(stockManagementService).decreaseStock(eq(products), any(OrderItems.class));
-            verify(userService).usePoint(user, 25000);
+            verify(pointService).usePoint(eq(user.getId()), eq(BigDecimal.valueOf(25000)), any());
             verify(orderService).createOrder(eq(userId), any(OrderItems.class));
         }
 
@@ -164,7 +168,7 @@ class OrderFacadeTest {
             verify(productService).findProductsByIds(List.of(1L));
             verify(stockManagementService).validateStock(eq(products), any(OrderItems.class));
             verify(stockManagementService, never()).decreaseStock(any(), any());
-            verify(userService, never()).usePoint(any(), anyInt());
+            verify(pointService, never()).usePoint(any(), any(), any());
             verify(orderService, never()).createOrder(any(), any());
         }
 
@@ -184,8 +188,11 @@ class OrderFacadeTest {
 
             when(userService.findByUserId(userId)).thenReturn(user);
             when(productService.findProductsByIds(List.of(1L))).thenReturn(products);
+            Order mockOrder = mock(Order.class);
+            when(mockOrder.getId()).thenReturn(1L);
+            when(orderService.createOrder(eq(userId), any(OrderItems.class))).thenReturn(mockOrder);
             doThrow(new CoreException(ErrorType.INVALID_INPUT_FORMAT, "포인트가 부족합니다."))
-                    .when(userService).usePoint(user, 10000);
+                    .when(pointService).usePoint(eq(user.getId()), eq(BigDecimal.valueOf(10000)), any());
 
             // act
             CoreException exception = assertThrows(CoreException.class,
@@ -199,8 +206,8 @@ class OrderFacadeTest {
             verify(productService).findProductsByIds(List.of(1L));
             verify(stockManagementService).validateStock(eq(products), any(OrderItems.class));
             verify(stockManagementService).decreaseStock(eq(products), any(OrderItems.class));
-            verify(userService).usePoint(user, 10000);
-            verify(orderService, never()).createOrder(any(), any());
+            verify(orderService).createOrder(eq(userId), any(OrderItems.class));
+            verify(pointService).usePoint(eq(user.getId()), eq(BigDecimal.valueOf(10000)), any());
         }
     }
 
@@ -231,13 +238,13 @@ class OrderFacadeTest {
             orderFacade.createOrder(userId, command);
 
             // assert - 호출 순서 검증
-            var inOrder = inOrder(userService, productService, stockManagementService, orderService);
+            var inOrder = inOrder(userService, productService, stockManagementService, pointService, orderService);
             inOrder.verify(userService).findByUserId(userId);
             inOrder.verify(productService).findProductsByIds(List.of(1L));
             inOrder.verify(stockManagementService).validateStock(eq(products), any(OrderItems.class));
             inOrder.verify(stockManagementService).decreaseStock(eq(products), any(OrderItems.class));
-            inOrder.verify(userService).usePoint(user, 10000);
             inOrder.verify(orderService).createOrder(eq(userId), any(OrderItems.class));
+            inOrder.verify(pointService).usePoint(eq(user.getId()), eq(BigDecimal.valueOf(10000)), any());
         }
 
         @DisplayName("OrderItems가 올바른 정보로 생성되고 주문에 사용된다.")
@@ -275,14 +282,8 @@ class OrderFacadeTest {
 
     private User createTestUser(String userId, int point) {
         UserCommand.Create command = new UserCommand.Create(userId, "test@example.com", "1990-01-01", Gender.MALE);
-        User user = User.of(command);
-        
-        // 포인트 충전 (테스트용)
-        if (point > 0) {
-            user.chargePoint(point);
-        }
-        
-        return user;
+
+        return User.of(command);
     }
 
     private Product createTestProduct(Long id, String name, BigDecimal price) {

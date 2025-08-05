@@ -27,18 +27,14 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private Gender gender;
 
-    @Column(nullable = false)
-    private int point;
-
     protected User() {
     }
 
-    private User(String userId, String email, LocalDate birthDate, Gender gender, int point) {
+    private User(String userId, String email, LocalDate birthDate, Gender gender) {
         this.userId = userId;
         this.email = email;
         this.birthDate = birthDate;
         this.gender = gender;
-        this.point = point;
     }
 
     public static User of(UserCommand.Create command) {
@@ -46,30 +42,7 @@ public class User extends BaseEntity {
         validateEmail(command.email());
         validateGender(command.gender());
 
-        return new User(command.userId(), command.email(), validateAndParseBirthDate(command.birthDate()), command.gender(), 0);
-    }
-
-    public void chargePoint(int amount) {
-        validateAmount(amount);
-
-        this.point += amount;
-    }
-
-    public void usePoint(int amount) {
-        validateAmount(amount);
-
-        if (this.point < amount) {
-            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, 
-                "포인트가 부족합니다. 보유: " + this.point + ", 필요: " + amount);
-        }
-
-        this.point -= amount;
-    }
-
-    private static void validateAmount(int amount) {
-        if (amount  <= 0) {
-            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "0원 이하는 충전하거나 사용할 수 없습니다.");
-        }
+        return new User(command.userId(), command.email(), validateAndParseBirthDate(command.birthDate()), command.gender());
     }
 
     private static void validateUserId(String userId) {

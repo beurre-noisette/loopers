@@ -33,22 +33,4 @@ public class UserService {
                 () -> new CoreException(ErrorType.USER_NOT_FOUND, userId)
         );
     }
-
-    @Transactional
-    public User chargePoint(String userId, int amount) {
-        User user = this.findByUserId(userId);
-
-        user.chargePoint(amount);
-        
-        userRepository.save(user);
-
-        return user;
-    }
-
-    @Transactional
-    public User usePoint(User user, int amount) {
-        user.usePoint(amount);
-        
-        return userRepository.save(user);
-    }
 }

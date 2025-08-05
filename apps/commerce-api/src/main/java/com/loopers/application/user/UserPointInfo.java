@@ -1,11 +1,18 @@
 package com.loopers.application.user;
 
+import com.loopers.domain.point.Point;
 import com.loopers.domain.user.User;
 
+import java.math.BigDecimal;
+
 public record UserPointInfo(
-        int point
+        String userId,
+        BigDecimal point
 ) {
-    public static UserPointInfo from(User user) {
-        return new UserPointInfo(user.getPoint());
+    public static UserPointInfo from(User user, Point point) {
+        return new UserPointInfo(
+                user.getUserId(),
+                point.getBalance()
+        );
     }
 }

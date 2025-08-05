@@ -17,7 +17,10 @@ public enum ErrorType {
     /** User 관련 예외 **/
     INVALID_INPUT_FORMAT(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), "입력 형식이 올바르지 않습니다."),
     ALREADY_REGISTERED_USER(HttpStatus.CONFLICT, HttpStatus.CONFLICT.getReasonPhrase(), "이미 회원가입이 되어 있습니다."),
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, HttpStatus.NOT_FOUND.getReasonPhrase(), "회원이 존재하지 않습니다.");
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, HttpStatus.NOT_FOUND.getReasonPhrase(), "회원이 존재하지 않습니다."),
+    
+    /** A에서 B를 빼고자 하는데 A가 충분하지 않은 경우 **/
+    NOT_ENOUGH(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), "충분하지 않습니다.");
 
     private final HttpStatus status;
     private final String code;
