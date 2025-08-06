@@ -90,4 +90,27 @@ public class PointService {
         pointHistoryRepository.save(pointHistory);
     }
 
+    @Transactional
+    public void usePointForDiscount(Long userId, BigDecimal amount, Long orderId) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+
+        Point point = getPoint(userId);
+        point.use(amount);
+
+        Point savedPoint = pointRepository.save(point);
+
+        PointHistory pointHistory = PointHistory.create(
+                new PointHistoryCommand.Create(
+                        userId,
+                        amount.negate(),
+                        savedPoint.getBalance(),
+                        PointTransactionType.ORDER_DISCOUNT,
+                        PointReference.order(orderId)
+                )
+        );
+        pointHistoryRepository.save(pointHistory);
+    }
+
 }

@@ -2,10 +2,14 @@ package com.loopers.application.order;
 
 import com.loopers.domain.discount.DiscountResult;
 import com.loopers.domain.discount.DiscountService;
-import com.loopers.domain.order.*;
+import com.loopers.domain.order.Order;
+import com.loopers.domain.order.OrderCommand;
+import com.loopers.domain.order.OrderItems;
+import com.loopers.domain.order.OrderService;
 import com.loopers.domain.payment.PaymentReference;
 import com.loopers.domain.payment.PaymentResult;
 import com.loopers.domain.payment.PaymentService;
+import com.loopers.domain.point.PointService;
 import com.loopers.domain.product.Product;
 import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.StockManagementService;
@@ -27,16 +31,18 @@ public class OrderFacade {
     private final StockManagementService stockManagementService;
     private final DiscountService discountService;
     private final PaymentService paymentService;
+    private final PointService pointService;
 
     @Autowired
     public OrderFacade(OrderService orderService, UserService userService,
-                       ProductService productService, StockManagementService stockManagementService, DiscountService discountService, PaymentService paymentService) {
+                       ProductService productService, StockManagementService stockManagementService, DiscountService discountService, PaymentService paymentService, PointService pointService) {
         this.orderService = orderService;
         this.userService = userService;
         this.productService = productService;
         this.stockManagementService = stockManagementService;
         this.discountService = discountService;
         this.paymentService = paymentService;
+        this.pointService = pointService;
     }
 
     @Transactional
@@ -50,20 +56,23 @@ public class OrderFacade {
 
         OrderItems orderItems = OrderItems.create(command.items(), products);
 
-        stockManagementService.validateStock(products, orderItems);
-        stockManagementService.decreaseStock(products, orderItems);
-
         Order order = orderService.createOrder(userId, orderItems);
 
         DiscountResult discount = discountService.calculateDiscount(order, command.pointToUse());
 
         BigDecimal finalAmount = order.getTotalAmount().subtract(discount.getTotalDiscount());
 
+        pointService.usePointForDiscount(user.getId(), command.pointToUse(), order.getId());
+
+        stockManagementService.decreaseStock(products, orderItems);
+
         PaymentResult payment = paymentService.processPayment(
                 user.getId(),
                 finalAmount,
                 PaymentReference.order(order.getId())
         );
+
+        order.complete();
 
         scheduleExternalNotification(order);
 

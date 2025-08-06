@@ -36,15 +36,8 @@ public class PointReference {
         return new PointReference(ReferenceType.USER_CHARGE, null, "사용자 직접 충전");
     }
 
-    public static PointReference userRegistration() {
-        return new PointReference(ReferenceType.SYSTEM_BONUS, null, "회원가입");
-    }
-
     public static PointReference welcomeBonus() {
         return new PointReference(ReferenceType.WELCOME_BONUS, null, "신규 가입 보너스");
     }
 
-    public static PointReference adminAdjustment(String reason) {
-        return new PointReference(ReferenceType.ADMIN, null, reason);
-    }
 }
