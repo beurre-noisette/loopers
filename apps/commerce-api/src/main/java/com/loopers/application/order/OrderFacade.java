@@ -1,8 +1,11 @@
 package com.loopers.application.order;
 
+import com.loopers.domain.discount.DiscountResult;
+import com.loopers.domain.discount.DiscountService;
 import com.loopers.domain.order.*;
-import com.loopers.domain.point.PointReference;
-import com.loopers.domain.point.PointService;
+import com.loopers.domain.payment.PaymentReference;
+import com.loopers.domain.payment.PaymentResult;
+import com.loopers.domain.payment.PaymentService;
 import com.loopers.domain.product.Product;
 import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.StockManagementService;
@@ -22,40 +25,49 @@ public class OrderFacade {
     private final UserService userService;
     private final ProductService productService;
     private final StockManagementService stockManagementService;
-    private final PointService pointService;
+    private final DiscountService discountService;
+    private final PaymentService paymentService;
 
     @Autowired
     public OrderFacade(OrderService orderService, UserService userService,
-                       ProductService productService, StockManagementService stockManagementService, PointService pointService) {
+                       ProductService productService, StockManagementService stockManagementService, DiscountService discountService, PaymentService paymentService) {
         this.orderService = orderService;
         this.userService = userService;
         this.productService = productService;
         this.stockManagementService = stockManagementService;
-        this.pointService = pointService;
+        this.discountService = discountService;
+        this.paymentService = paymentService;
     }
 
     @Transactional
     public OrderInfo createOrder(String userId, OrderCommand.Create command) {
         User user = userService.findByUserId(userId);
-        
+
         List<Long> productIds = command.items().stream()
                 .map(OrderCommand.CreateItem::productId)
                 .toList();
         List<Product> products = productService.findProductsByIds(productIds);
-        
+
         OrderItems orderItems = OrderItems.create(command.items(), products);
-        
+
         stockManagementService.validateStock(products, orderItems);
         stockManagementService.decreaseStock(products, orderItems);
-        
-        BigDecimal totalAmount = orderItems.calculateTotalAmount();
-        
+
         Order order = orderService.createOrder(userId, orderItems);
-        pointService.usePoint(user.getId(), totalAmount, PointReference.order(order.getId()));
-        
+
+        DiscountResult discount = discountService.calculateDiscount(order, command.pointToUse());
+
+        BigDecimal finalAmount = order.getTotalAmount().subtract(discount.getTotalDiscount());
+
+        PaymentResult payment = paymentService.processPayment(
+                user.getId(),
+                finalAmount,
+                PaymentReference.order(order.getId())
+        );
+
         scheduleExternalNotification(order);
-        
-        return OrderInfo.from(order);
+
+        return OrderInfo.from(order, payment, command.pointToUse());
     }
 
     private void scheduleExternalNotification(Order order) {

@@ -20,7 +20,12 @@ public enum ErrorType {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, HttpStatus.NOT_FOUND.getReasonPhrase(), "회원이 존재하지 않습니다."),
     
     /** A에서 B를 빼고자 하는데 A가 충분하지 않은 경우 **/
-    NOT_ENOUGH(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), "충분하지 않습니다.");
+    NOT_ENOUGH(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), "충분하지 않습니다."),
+
+    /** Payment 관련 예외 **/
+    PAYMENT_INSUFFICIENT_POINT(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), "포인트가 부족합니다."),
+    PAYMENT_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), "결제 처리 중 오류가 발생했습니다."),
+    PAYMENT_VALIDATION_FAILED(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), "결제 검증에 실패했습니다.");
 
     private final HttpStatus status;
     private final String code;
