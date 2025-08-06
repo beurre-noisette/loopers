@@ -56,15 +56,15 @@ public class OrderFacade {
 
         OrderItems orderItems = OrderItems.create(command.items(), products);
 
+        stockManagementService.decreaseStock(products, orderItems);
+
         Order order = orderService.createOrder(userId, orderItems);
 
-        DiscountResult discount = discountService.calculateDiscount(order, command.pointToUse());
+        DiscountResult discount = discountService.calculateDiscount(order, command.pointToDiscount());
 
         BigDecimal finalAmount = order.getTotalAmount().subtract(discount.getTotalDiscount());
 
-        pointService.usePointForDiscount(user.getId(), command.pointToUse(), order.getId());
-
-        stockManagementService.decreaseStock(products, orderItems);
+        pointService.usePointForDiscount(user.getId(), command.pointToDiscount(), order.getId());
 
         PaymentResult payment = paymentService.processPayment(
                 user.getId(),
@@ -76,7 +76,7 @@ public class OrderFacade {
 
         scheduleExternalNotification(order);
 
-        return OrderInfo.from(order, payment, command.pointToUse());
+        return OrderInfo.from(order, payment, command.pointToDiscount());
     }
 
     private void scheduleExternalNotification(Order order) {

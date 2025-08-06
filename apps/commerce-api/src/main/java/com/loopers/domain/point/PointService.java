@@ -26,6 +26,12 @@ public class PointService {
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "포인트 정보를 찾을 수 없습니다."));
     }
 
+    @Transactional(readOnly = true)
+    public Point getPointWithLock(Long userId) {
+        return pointRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "포인트 정보를 찾을 수 없습니다."));
+    }
+
     @Transactional
     public Point createPointWithInitialAmount(Long userId, BigDecimal initialAmount, PointReference reference) {
         if (pointRepository.findByUserId(userId).isPresent()) {
@@ -73,7 +79,7 @@ public class PointService {
 
     @Transactional
     public void usePoint(Long userId, BigDecimal amount, PointReference reference) {
-        Point point = getPoint(userId);
+        Point point = getPointWithLock(userId);
         point.use(amount);
 
         Point savedPoint = pointRepository.save(point);
@@ -96,7 +102,7 @@ public class PointService {
             return;
         }
 
-        Point point = getPoint(userId);
+        Point point = getPointWithLock(userId);
         point.use(amount);
 
         Point savedPoint = pointRepository.save(point);

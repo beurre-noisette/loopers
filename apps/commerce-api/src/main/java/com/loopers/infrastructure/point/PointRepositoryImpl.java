@@ -29,10 +29,6 @@ public class PointRepositoryImpl implements PointRepository {
     }
 
     @Override
-    public void delete(Point point) {
-        pointJpaRepository.delete(point);
-    }
-
     public Optional<Point> findByUserIdWithLock(Long userId) {
         return pointJpaRepository.findByUserIdWithLock(userId);
     }

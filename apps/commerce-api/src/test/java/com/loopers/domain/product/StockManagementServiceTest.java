@@ -9,119 +9,29 @@ import com.loopers.support.error.ErrorType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class StockManagementServiceTest {
 
-    private final StockManagementService stockManagementService = new StockManagementService();
+    @Mock
+    private ProductRepository productRepository;
 
-    @DisplayName("재고 검증 시")
-    @Nested
-    class ValidateStock {
-
-        @DisplayName("충분한 재고가 있으면 정상적으로 통과한다.")
-        @Test
-        void validateStock_success_whenSufficientStock() {
-            // arrange
-            Brand brand = Brand.of(new BrandCommand.Create("테스트 브랜드", "테스트 브랜드 설명"));
-            Product product1 = createProduct(1L, "상품1", new BigDecimal("10000"), 100, brand);
-            Product product2 = createProduct(2L, "상품2", new BigDecimal("5000"), 50, brand);
-            List<Product> products = List.of(product1, product2);
-
-            OrderItem orderItem1 = new OrderItem(1L, 10, new BigDecimal("10000"));
-            OrderItem orderItem2 = new OrderItem(2L, 5, new BigDecimal("5000"));
-            OrderItems orderItems = OrderItems.from(List.of(orderItem1, orderItem2));
-
-            // act & assert
-            assertDoesNotThrow(() -> stockManagementService.validateStock(products, orderItems));
-        }
-
-        @DisplayName("재고가 부족하면 INVALID_INPUT_FORMAT 예외가 발생한다.")
-        @Test
-        void throwsInvalidInputFormatException_whenInsufficientStock() {
-            // arrange
-            Brand brand = Brand.of(new BrandCommand.Create("테스트 브랜드", "테스트 브랜드 설명"));
-            Product product = createProduct(1L, "상품1", new BigDecimal("10000"), 5, brand);
-            List<Product> products = List.of(product);
-
-            OrderItem orderItem = new OrderItem(1L, 10, new BigDecimal("10000"));
-            OrderItems orderItems = OrderItems.from(List.of(orderItem));
-
-            // act & assert
-            CoreException exception = assertThrows(CoreException.class,
-                    () -> stockManagementService.validateStock(products, orderItems));
-
-            assertAll(
-                    () -> assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT),
-                    () -> assertThat(exception.getMessage()).contains("재고가 부족합니다"),
-                    () -> assertThat(exception.getMessage()).contains("상품1"),
-                    () -> assertThat(exception.getMessage()).contains("현재 재고: 5"),
-                    () -> assertThat(exception.getMessage()).contains("요청 수량: 10")
-            );
-        }
-
-        @DisplayName("정확히 재고와 같은 수량을 주문하면 정상적으로 통과한다.")
-        @Test
-        void validateStock_success_whenExactStock() {
-            // arrange
-            Brand brand = Brand.of(new BrandCommand.Create("테스트 브랜드", "테스트 브랜드 설명"));
-            Product product = createProduct(1L, "상품1", new BigDecimal("10000"), 10, brand);
-            List<Product> products = List.of(product);
-
-            OrderItem orderItem = new OrderItem(1L, 10, new BigDecimal("10000"));
-            OrderItems orderItems = OrderItems.from(List.of(orderItem));
-
-            // act & assert
-            assertDoesNotThrow(() -> stockManagementService.validateStock(products, orderItems));
-        }
-
-        @DisplayName("여러 상품 중 일부만 재고가 부족해도 예외가 발생한다.")
-        @Test
-        void throwsInvalidInputFormatException_whenSomeProductsInsufficientStock() {
-            // arrange
-            Brand brand = Brand.of(new BrandCommand.Create("테스트 브랜드", "테스트 브랜드 설명"));
-            Product product1 = createProduct(1L, "상품1", new BigDecimal("10000"), 100, brand);
-            Product product2 = createProduct(2L, "상품2", new BigDecimal("5000"), 3, brand);
-            List<Product> products = List.of(product1, product2);
-
-            OrderItem orderItem1 = new OrderItem(1L, 10, new BigDecimal("10000"));
-            OrderItem orderItem2 = new OrderItem(2L, 5, new BigDecimal("5000"));
-            OrderItems orderItems = OrderItems.from(List.of(orderItem1, orderItem2));
-
-            // act
-            CoreException exception = assertThrows(CoreException.class,
-                    () -> stockManagementService.validateStock(products, orderItems));
-
-            // assert
-            assertAll(
-                    () -> assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT),
-                    () -> assertThat(exception.getMessage()).contains("재고가 부족합니다"),
-                    () -> assertThat(exception.getMessage()).contains("상품2")
-            );
-        }
-
-        @DisplayName("주문 항목에 없는 상품은 검증하지 않는다.")
-        @Test
-        void validateStock_ignoresProductsNotInOrder() {
-            // arrange
-            Brand brand = Brand.of(new BrandCommand.Create("테스트 브랜드", "테스트 브랜드 설명"));
-            Product product1 = createProduct(1L, "상품1", new BigDecimal("10000"), 100, brand);
-            Product product2 = createProduct(2L, "상품2", new BigDecimal("5000"), 0, brand); // 재고 0이지만 주문하지 않음
-            List<Product> products = List.of(product1, product2);
-
-            OrderItem orderItem1 = new OrderItem(1L, 10, new BigDecimal("10000"));
-            OrderItems orderItems = OrderItems.from(List.of(orderItem1));
-
-            // act & assert
-            assertDoesNotThrow(() -> stockManagementService.validateStock(products, orderItems));
-        }
-    }
+    @InjectMocks
+    private StockManagementService stockManagementService;
 
     @DisplayName("재고 차감 시")
     @Nested
@@ -136,21 +46,33 @@ class StockManagementServiceTest {
             Product product2 = createProduct(2L, "상품2", new BigDecimal("5000"), 50, brand);
             List<Product> products = List.of(product1, product2);
 
+            // Mock으로 락이 적용된 상품 조회 시뮬레이션
+            Product lockedProduct1 = createProduct(1L, "상품1", new BigDecimal("10000"), 100, brand);
+            Product lockedProduct2 = createProduct(2L, "상품2", new BigDecimal("5000"), 50, brand);
+            
             OrderItem orderItem1 = new OrderItem(1L, 10, new BigDecimal("10000"));
             OrderItem orderItem2 = new OrderItem(2L, 5, new BigDecimal("5000"));
             OrderItems orderItems = OrderItems.from(List.of(orderItem1, orderItem2));
+
+            when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(lockedProduct1));
+            when(productRepository.findByIdWithLock(2L)).thenReturn(Optional.of(lockedProduct2));
+            when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // act
             stockManagementService.decreaseStock(products, orderItems);
 
             // assert
             assertAll(
-                    () -> assertThat(product1.getStock()).isEqualTo(90),
-                    () -> assertThat(product2.getStock()).isEqualTo(45)
+                    () -> assertThat(lockedProduct1.getStock()).isEqualTo(90),
+                    () -> assertThat(lockedProduct2.getStock()).isEqualTo(45)
             );
+
+            verify(productRepository).findByIdWithLock(1L);
+            verify(productRepository).findByIdWithLock(2L);
+            verify(productRepository, times(2)).save(any(Product.class));
         }
 
-        @DisplayName("주문 항목에 없는 상품의 재고는 차감되지 않는다.")
+        @DisplayName("주문 항목에 없는 상품은 처리하지 않는다.")
         @Test
         void decreaseStock_ignoresProductsNotInOrder() {
             // arrange
@@ -159,17 +81,23 @@ class StockManagementServiceTest {
             Product product2 = createProduct(2L, "상품2", new BigDecimal("5000"), 50, brand);
             List<Product> products = List.of(product1, product2);
 
+            Product lockedProduct1 = createProduct(1L, "상품1", new BigDecimal("10000"), 100, brand);
+
             OrderItem orderItem1 = new OrderItem(1L, 10, new BigDecimal("10000"));
             OrderItems orderItems = OrderItems.from(List.of(orderItem1));
+
+            when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(lockedProduct1));
+            when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // act
             stockManagementService.decreaseStock(products, orderItems);
 
             // assert
-            assertAll(
-                    () -> assertThat(product1.getStock()).isEqualTo(90),
-                    () -> assertThat(product2.getStock()).isEqualTo(50) // 변경되지 않음
-            );
+            assertThat(lockedProduct1.getStock()).isEqualTo(90);
+
+            verify(productRepository).findByIdWithLock(1L);
+            verify(productRepository, never()).findByIdWithLock(2L);
+            verify(productRepository, times(1)).save(any(Product.class));
         }
 
         @DisplayName("재고가 0이 되어도 정상적으로 처리된다.")
@@ -180,62 +108,110 @@ class StockManagementServiceTest {
             Product product = createProduct(1L, "상품1", new BigDecimal("10000"), 10, brand);
             List<Product> products = List.of(product);
 
+            Product lockedProduct = createProduct(1L, "상품1", new BigDecimal("10000"), 10, brand);
+
             OrderItem orderItem = new OrderItem(1L, 10, new BigDecimal("10000"));
             OrderItems orderItems = OrderItems.from(List.of(orderItem));
 
+            when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(lockedProduct));
+            when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
             // act
             stockManagementService.decreaseStock(products, orderItems);
 
             // assert
-            assertThat(product.getStock()).isEqualTo(0);
+            assertThat(lockedProduct.getStock()).isEqualTo(0);
+
+            verify(productRepository).findByIdWithLock(1L);
+            verify(productRepository).save(lockedProduct);
         }
-    }
 
-    @DisplayName("재고 검증과 차감의 통합 시나리오")
-    @Nested
-    class IntegratedScenario {
-
-        @DisplayName("재고 검증 후 차감이 정상적으로 수행된다.")
+        @DisplayName("상품이 존재하지 않으면 예외가 발생한다.")
         @Test
-        void validateAndDecreaseStock_success() {
+        void decreaseStock_throwsException_whenProductNotFound() {
             // arrange
             Brand brand = Brand.of(new BrandCommand.Create("테스트 브랜드", "테스트 브랜드 설명"));
-            Product product1 = createProduct(1L, "상품1", new BigDecimal("10000"), 20, brand);
-            Product product2 = createProduct(2L, "상품2", new BigDecimal("5000"), 15, brand);
-            List<Product> products = List.of(product1, product2);
+            Product product = createProduct(1L, "상품1", new BigDecimal("10000"), 10, brand);
+            List<Product> products = List.of(product);
 
-            OrderItem orderItem1 = new OrderItem(1L, 8, new BigDecimal("10000"));
-            OrderItem orderItem2 = new OrderItem(2L, 3, new BigDecimal("5000"));
-            OrderItems orderItems = OrderItems.from(List.of(orderItem1, orderItem2));
+            OrderItem orderItem = new OrderItem(1L, 5, new BigDecimal("10000"));
+            OrderItems orderItems = OrderItems.from(List.of(orderItem));
 
-            // act
-            stockManagementService.validateStock(products, orderItems);
-            stockManagementService.decreaseStock(products, orderItems);
+            when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.empty());
 
-            // assert
-            assertAll(
-                    () -> assertThat(product1.getStock()).isEqualTo(12),
-                    () -> assertThat(product2.getStock()).isEqualTo(12)
-            );
+            // act & assert
+            CoreException exception = assertThrows(CoreException.class,
+                    () -> stockManagementService.decreaseStock(products, orderItems));
+
+            assertThat(exception.getErrorType()).isEqualTo(ErrorType.NOT_FOUND);
+            assertThat(exception.getMessage()).contains("상품을 찾을 수 없습니다");
+
+            verify(productRepository).findByIdWithLock(1L);
+            verify(productRepository, never()).save(any(Product.class));
         }
 
-        @DisplayName("재고 검증이 실패하면 차감하지 않는다.")
+        @DisplayName("재고가 부족하면 상품 엔티티에서 예외가 발생한다.")
         @Test
-        void validateStock_fails_noStockDecrease() {
+        void decreaseStock_throwsException_whenInsufficientStock() {
             // arrange
             Brand brand = Brand.of(new BrandCommand.Create("테스트 브랜드", "테스트 브랜드 설명"));
             Product product = createProduct(1L, "상품1", new BigDecimal("10000"), 5, brand);
             List<Product> products = List.of(product);
 
+            Product lockedProduct = createProduct(1L, "상품1", new BigDecimal("10000"), 5, brand);
+
             OrderItem orderItem = new OrderItem(1L, 10, new BigDecimal("10000"));
             OrderItems orderItems = OrderItems.from(List.of(orderItem));
 
-            // act & assert
-            assertThrows(CoreException.class,
-                    () -> stockManagementService.validateStock(products, orderItems));
+            when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(lockedProduct));
 
-            // 검증 실패 후에도 재고는 변경되지 않음
-            assertThat(product.getStock()).isEqualTo(5);
+            // act & assert
+            CoreException exception = assertThrows(CoreException.class,
+                    () -> stockManagementService.decreaseStock(products, orderItems));
+
+            assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT);
+            assertThat(exception.getMessage()).contains("재고가 부족합니다");
+
+            verify(productRepository).findByIdWithLock(1L);
+            verify(productRepository, never()).save(any(Product.class));
+        }
+    }
+
+    @DisplayName("락 기반 동시성 제어")
+    @Nested
+    class ConcurrencyControl {
+
+        @DisplayName("각 상품에 대해 락이 적용된 조회가 수행된다.")
+        @Test
+        void decreaseStock_usesLockForEachProduct() {
+            // arrange
+            Brand brand = Brand.of(new BrandCommand.Create("테스트 브랜드", "테스트 브랜드 설명"));
+            Product product1 = createProduct(1L, "상품1", new BigDecimal("10000"), 100, brand);
+            Product product2 = createProduct(2L, "상품2", new BigDecimal("5000"), 50, brand);
+            List<Product> products = List.of(product1, product2);
+
+            Product lockedProduct1 = createProduct(1L, "상품1", new BigDecimal("10000"), 100, brand);
+            Product lockedProduct2 = createProduct(2L, "상품2", new BigDecimal("5000"), 50, brand);
+
+            OrderItem orderItem1 = new OrderItem(1L, 10, new BigDecimal("10000"));
+            OrderItem orderItem2 = new OrderItem(2L, 5, new BigDecimal("5000"));
+            OrderItems orderItems = OrderItems.from(List.of(orderItem1, orderItem2));
+
+            when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(lockedProduct1));
+            when(productRepository.findByIdWithLock(2L)).thenReturn(Optional.of(lockedProduct2));
+            when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // act
+            stockManagementService.decreaseStock(products, orderItems);
+
+            // assert - 락이 적용된 조회가 각 상품별로 호출되었는지 확인
+            verify(productRepository).findByIdWithLock(1L);
+            verify(productRepository).findByIdWithLock(2L);
+            verify(productRepository, times(2)).save(any(Product.class));
+
+            // 실제 재고 차감 확인
+            assertThat(lockedProduct1.getStock()).isEqualTo(90);
+            assertThat(lockedProduct2.getStock()).isEqualTo(45);
         }
     }
 

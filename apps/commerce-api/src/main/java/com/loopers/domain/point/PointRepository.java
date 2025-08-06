@@ -8,5 +8,5 @@ public interface PointRepository {
 
     Optional<Point> findByUserId(Long userId);
 
-    void delete(Point point);
+    Optional<Point> findByUserIdWithLock(Long userId);
 }

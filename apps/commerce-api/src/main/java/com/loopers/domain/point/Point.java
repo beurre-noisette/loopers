@@ -5,7 +5,6 @@ import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import jakarta.persistence.Version;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -18,9 +17,6 @@ public class Point extends BaseEntity {
     private Long userId;
 
     private BigDecimal balance;
-
-    @Version
-    private Long version;
 
     protected Point() {}
 

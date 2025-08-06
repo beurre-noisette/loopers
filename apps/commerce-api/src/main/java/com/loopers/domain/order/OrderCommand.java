@@ -10,15 +10,15 @@ public class OrderCommand {
 
     public record Create(
             List<CreateItem> items,
-            BigDecimal pointToUse
+            BigDecimal pointToDiscount
     ) {
         public Create {
             if (items == null || items.isEmpty()) {
                 throw new CoreException(ErrorType.BAD_REQUEST, "주문 항목은 필수 입니다.");
             }
 
-            if (pointToUse == null || pointToUse.compareTo(BigDecimal.ZERO) < 0) {
-                pointToUse = BigDecimal.ZERO;
+            if (pointToDiscount == null || pointToDiscount.compareTo(BigDecimal.ZERO) < 0) {
+                pointToDiscount = BigDecimal.ZERO;
             }
         }
     }
