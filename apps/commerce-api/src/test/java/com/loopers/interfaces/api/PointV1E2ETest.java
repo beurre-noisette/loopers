@@ -1,9 +1,8 @@
 package com.loopers.interfaces.api;
 
+import com.loopers.application.user.UserFacade;
 import com.loopers.domain.user.Gender;
-import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserCommand;
-import com.loopers.domain.user.UserRepository;
 import com.loopers.interfaces.api.point.PointV1Dto;
 import com.loopers.interfaces.api.user.UserV1Dto;
 import com.loopers.support.error.ErrorType;
@@ -27,13 +26,13 @@ class PointV1E2ETest {
 
     private final TestRestTemplate testRestTemplate;
     private final DatabaseCleanUp databaseCleanUp;
-    private final UserRepository userRepository;
+    private final UserFacade userFacade;
 
     @Autowired
-    public PointV1E2ETest(TestRestTemplate testRestTemplate, DatabaseCleanUp databaseCleanUp, UserRepository userRepository) {
+    public PointV1E2ETest(TestRestTemplate testRestTemplate, DatabaseCleanUp databaseCleanUp, UserFacade userFacade) {
         this.testRestTemplate = testRestTemplate;
         this.databaseCleanUp = databaseCleanUp;
-        this.userRepository = userRepository;
+        this.userFacade = userFacade;
     }
 
     @AfterEach
@@ -49,7 +48,7 @@ class PointV1E2ETest {
         void returnUserPoint_whenUserExists() {
             // arrange
             String userId = "testUser";
-            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
+            userFacade.signUp(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE));
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
 
@@ -96,7 +95,7 @@ class PointV1E2ETest {
         void returnUserIdAndPoint_whenUserExists() {
             // arrange
             String userId = "testUser";
-            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
+            userFacade.signUp(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE));
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
@@ -148,7 +147,7 @@ class PointV1E2ETest {
         void return400BadRequest_whenProvidedZeroAmount() {
             // arrange
             String userId = "testUser";
-            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
+            userFacade.signUp(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE));
             
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
@@ -175,7 +174,7 @@ class PointV1E2ETest {
         void return400BadRequest_whenProvidedNegativeAmount() {
             // arrange
             String userId = "testUser";
-            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
+            userFacade.signUp(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE));
             
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
@@ -202,7 +201,7 @@ class PointV1E2ETest {
         void return400BadRequest_whenProvidedNullAmount() {
             // arrange
             String userId = "testUser";
-            userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
+            userFacade.signUp(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE));
             
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", userId);
