@@ -10,7 +10,8 @@ public class OrderCommand {
 
     public record Create(
             List<CreateItem> items,
-            BigDecimal pointToDiscount
+            BigDecimal pointToDiscount,
+            Long userCouponId
     ) {
         public Create {
             if (items == null || items.isEmpty()) {

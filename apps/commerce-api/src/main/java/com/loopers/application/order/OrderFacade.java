@@ -60,11 +60,11 @@ public class OrderFacade {
 
         Order order = orderService.createOrder(userId, orderItems);
 
-        DiscountResult discount = discountService.calculateDiscount(order, command.pointToDiscount());
+        DiscountResult discount = discountService.calculateDiscount(order, command.pointToDiscount(), command.userCouponId());
 
         BigDecimal finalAmount = order.getTotalAmount().subtract(discount.getTotalDiscount());
 
-        pointService.usePointForDiscount(user.getId(), command.pointToDiscount(), order.getId());
+        pointService.usePointForDiscount(user.getId(), discount.pointDiscount(), order.getId());
 
         PaymentResult payment = paymentService.processPayment(
                 user.getId(),
