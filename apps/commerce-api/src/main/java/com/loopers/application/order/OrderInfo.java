@@ -14,20 +14,20 @@ public record OrderInfo(
         String userId,
         OrderStatus status,
         BigDecimal originalAmount,
-        BigDecimal pointUsed,
+        BigDecimal pointDiscount,
         BigDecimal finalAmount,
         Long paymentId,
         List<OrderItem> orderItems,
         ZonedDateTime createdAt,
         ZonedDateTime updatedAt
 ) {
-    public static OrderInfo from(Order order, PaymentResult payment, BigDecimal pointUsed) {
+    public static OrderInfo from(Order order, PaymentResult payment, BigDecimal pointDiscount) {
         return new OrderInfo(
                 order.getId(),
                 order.getUserId(),
                 order.getStatus(),
                 order.getTotalAmount(),
-                pointUsed,
+                pointDiscount,
                 payment.amount(),
                 payment.paymentId(),
                 order.getOrderItems().getItems(),
