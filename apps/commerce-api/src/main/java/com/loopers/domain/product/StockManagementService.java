@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +25,11 @@ public class StockManagementService {
     public void decreaseStock(List<Product> products, OrderItems orderItems) {
         Map<Long, Integer> requiredQuantities = orderItems.getProductQuantityMap();
 
-        for (Product product : products) {
+        List<Product> sortedProducts = products.stream()
+                .sorted(Comparator.comparing(Product::getId))
+                .toList();
+
+        for (Product product : sortedProducts) {
             Integer quantity = requiredQuantities.get(product.getId());
             if (quantity != null) {
                 Product lockedProduct = productRepository.findByIdWithLock(product.getId())
