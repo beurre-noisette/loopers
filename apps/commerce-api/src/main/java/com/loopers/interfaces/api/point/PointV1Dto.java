@@ -9,7 +9,7 @@ public class PointV1Dto {
     ) {
         public static PointResponse from(UserPointInfo userPointInfo) {
             return new PointResponse(
-                    userPointInfo.point()
+                    userPointInfo.point().intValue()
             );
         }
     }

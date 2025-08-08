@@ -7,9 +7,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -26,27 +23,25 @@ public class Order extends BaseEntity {
     private BigDecimal totalAmount;
 
     @Column(columnDefinition = "TEXT")
-    @Convert(converter = OrderItemListConverter.class)
-    private List<OrderItem> orderItems = new ArrayList<>();
+    @Convert(converter = OrderItemsConverter.class)
+    private OrderItems orderItems;
 
     protected Order() {}
 
-    private Order(String userId, List<OrderItem> orderItems) {
+    private Order(String userId, OrderItems orderItems) {
         this.userId = userId;
-        this.orderItems = new ArrayList<>(orderItems);
-        this.totalAmount = calculateTotalAmount();
+        this.orderItems = orderItems;
+        this.totalAmount = orderItems.calculateTotalAmount();
         this.status = OrderStatus.PENDING;
     }
 
-    public static Order create(String userId, List<OrderItem> orderItems) {
+    public static Order create(String userId, OrderItems orderItems) {
         validateUserId(userId);
-        validateOrderItems(orderItems);
-
         return new Order(userId, orderItems);
     }
 
-    public List<OrderItem> getOrderItems() {
-        return Collections.unmodifiableList(this.orderItems);
+    public OrderItems getOrderItems() {
+        return this.orderItems;
     }
 
     public void complete() {
@@ -65,21 +60,10 @@ public class Order extends BaseEntity {
         this.status = OrderStatus.CANCELLED;
     }
 
-    public BigDecimal calculateTotalAmount() {
-        return this.orderItems.stream()
-                .map(OrderItem::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
 
     private static void validateUserId(String userId) {
         if (userId == null || userId.isBlank()) {
             throw new CoreException(ErrorType.BAD_REQUEST, "사용자 ID는 필수값입니다.");
-        }
-    }
-
-    private static void validateOrderItems(List<OrderItem> orderItems) {
-        if (orderItems == null || orderItems.isEmpty()) {
-            throw new CoreException(ErrorType.BAD_REQUEST, "주문 항목은 최소 1개 이상이어야 합니다.");
         }
     }
 }

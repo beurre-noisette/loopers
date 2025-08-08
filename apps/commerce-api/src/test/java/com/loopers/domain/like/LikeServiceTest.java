@@ -75,14 +75,10 @@ class LikeServiceTest {
             User user = createTestUser();
             Target target = ProductTarget.of(1L);
 
-            when(likeRepository.existsByUserAndTarget(user, target.getType(), target.getId()))
-                    .thenReturn(true);
-
             // act
             likeService.cancelLike(user, target);
 
             // assert
-            verify(likeRepository).existsByUserAndTarget(user, target.getType(), target.getId());
             verify(likeRepository).deleteByUserAndTarget(user, target.getType(), target.getId());
         }
 
@@ -93,15 +89,11 @@ class LikeServiceTest {
             User user = createTestUser();
             Target target = ProductTarget.of(1L);
 
-            when(likeRepository.existsByUserAndTarget(user, target.getType(), target.getId()))
-                    .thenReturn(false);
-
             // act
             likeService.cancelLike(user, target);
 
             // assert
-            verify(likeRepository).existsByUserAndTarget(user, target.getType(), target.getId());
-            verify(likeRepository, never()).deleteByUserAndTarget(any(), any(), any());
+            verify(likeRepository).deleteByUserAndTarget(user, target.getType(), target.getId());
         }
     }
 

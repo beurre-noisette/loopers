@@ -28,15 +28,16 @@ class OrderTest {
             List<OrderItem> orderItems = List.of(orderItem1, orderItem2);
 
             // act
-            Order order = Order.create(userId, orderItems);
+            OrderItems orderItemsCollection = OrderItems.from(orderItems);
+            Order order = Order.create(userId, orderItemsCollection);
 
             // assert
             assertAll(
                     () -> assertThat(order.getUserId()).isEqualTo(userId),
                     () -> assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING),
-                    () -> assertThat(order.getOrderItems()).hasSize(2),
+                    () -> assertThat(order.getOrderItems().getItems()).hasSize(2),
                     () -> assertThat(order.getTotalAmount()).isEqualTo(new BigDecimal("25000")),
-                    () -> assertThat(order.calculateTotalAmount()).isEqualTo(new BigDecimal("25000"))
+                    () -> assertThat(order.getOrderItems().calculateTotalAmount()).isEqualTo(new BigDecimal("25000"))
             );
         }
 
@@ -48,8 +49,9 @@ class OrderTest {
             List<OrderItem> orderItems = List.of(orderItem);
 
             // act & assert
+            OrderItems orderItemsCollection = OrderItems.from(orderItems);
             CoreException exception = assertThrows(CoreException.class, 
-                () -> Order.create(null, orderItems));
+                () -> Order.create(null, orderItemsCollection));
             
             assertThat(exception.getErrorType()).isEqualTo(ErrorType.BAD_REQUEST);
             assertThat(exception.getMessage()).contains("사용자 ID는 필수값입니다");
@@ -63,33 +65,12 @@ class OrderTest {
             List<OrderItem> orderItems = List.of(orderItem);
 
             // act & assert
+            OrderItems orderItemsCollection = OrderItems.from(orderItems);
             CoreException exception = assertThrows(CoreException.class, 
-                () -> Order.create("", orderItems));
+                () -> Order.create("", orderItemsCollection));
             
             assertThat(exception.getErrorType()).isEqualTo(ErrorType.BAD_REQUEST);
             assertThat(exception.getMessage()).contains("사용자 ID는 필수값입니다");
-        }
-
-        @DisplayName("주문 항목이 null일 경우 주문 생성에 실패하고 BAD_REQUEST 예외가 발생한다.")
-        @Test
-        void throwBadRequestException_whenOrderItemsIsNull() {
-            // act & assert
-            CoreException exception = assertThrows(CoreException.class, 
-                () -> Order.create("testUser", null));
-            
-            assertThat(exception.getErrorType()).isEqualTo(ErrorType.BAD_REQUEST);
-            assertThat(exception.getMessage()).contains("주문 항목은 최소 1개 이상이어야 합니다");
-        }
-
-        @DisplayName("주문 항목이 빈 리스트일 경우 주문 생성에 실패하고 BAD_REQUEST 예외가 발생한다.")
-        @Test
-        void throwBadRequestException_whenOrderItemsIsEmpty() {
-            // act & assert
-            CoreException exception = assertThrows(CoreException.class, 
-                () -> Order.create("testUser", List.of()));
-            
-            assertThat(exception.getErrorType()).isEqualTo(ErrorType.BAD_REQUEST);
-            assertThat(exception.getMessage()).contains("주문 항목은 최소 1개 이상이어야 합니다");
         }
     }
 
@@ -102,7 +83,8 @@ class OrderTest {
         void completeOrder_whenOrderStatusIsPending() {
             // arrange
             OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
-            Order order = Order.create("testUser", List.of(orderItem));
+            OrderItems orderItemsCollection = OrderItems.from(List.of(orderItem));
+            Order order = Order.create("testUser", orderItemsCollection);
 
             // act
             order.complete();
@@ -116,7 +98,8 @@ class OrderTest {
         void throwException_whenTryToCompleteAlreadyCompletedOrder() {
             // arrange
             OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
-            Order order = Order.create("testUser", List.of(orderItem));
+            OrderItems orderItemsCollection = OrderItems.from(List.of(orderItem));
+            Order order = Order.create("testUser", orderItemsCollection);
             order.complete(); // 이미 완료 상태로 변경
 
             // act & assert
@@ -131,7 +114,8 @@ class OrderTest {
         void cancelOrder_whenOrderStatusIsPending() {
             // arrange
             OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
-            Order order = Order.create("testUser", List.of(orderItem));
+            OrderItems orderItemsCollection = OrderItems.from(List.of(orderItem));
+            Order order = Order.create("testUser", orderItemsCollection);
 
             // act
             order.cancel();
@@ -145,7 +129,8 @@ class OrderTest {
         void throwException_whenTryToCancelCompletedOrder() {
             // arrange
             OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
-            Order order = Order.create("testUser", List.of(orderItem));
+            OrderItems orderItemsCollection = OrderItems.from(List.of(orderItem));
+            Order order = Order.create("testUser", orderItemsCollection);
             order.complete(); // 완료 상태로 변경
 
             // act & assert
@@ -170,10 +155,11 @@ class OrderTest {
             List<OrderItem> orderItems = List.of(orderItem1, orderItem2, orderItem3);
 
             // act
-            Order order = Order.create("testUser", orderItems);
+            OrderItems orderItemsCollection = OrderItems.from(orderItems);
+            Order order = Order.create("testUser", orderItemsCollection);
 
             // assert
-            assertThat(order.calculateTotalAmount()).isEqualTo(new BigDecimal("66000"));
+            assertThat(orderItemsCollection.calculateTotalAmount()).isEqualTo(new BigDecimal("66000"));
             assertThat(order.getTotalAmount()).isEqualTo(new BigDecimal("66000"));
         }
 
@@ -185,10 +171,11 @@ class OrderTest {
             List<OrderItem> orderItems = List.of(orderItem);
 
             // act
-            Order order = Order.create("testUser", orderItems);
+            OrderItems orderItemsCollection = OrderItems.from(orderItems);
+            Order order = Order.create("testUser", orderItemsCollection);
 
             // assert
-            assertThat(order.calculateTotalAmount()).isEqualTo(new BigDecimal("35000"));
+            assertThat(orderItemsCollection.calculateTotalAmount()).isEqualTo(new BigDecimal("35000"));
         }
     }
 }

@@ -9,16 +9,14 @@ public record UserInfo(
         String userId,
         String email,
         LocalDate birthDate,
-        Gender gender,
-        Integer point
+        Gender gender
 ) {
     public static UserInfo from(User user) {
         return new UserInfo(
                 user.getUserId(),
                 user.getEmail(),
                 user.getBirthDate(),
-                user.getGender(),
-                user.getPoint()
+                user.getGender()
         );
     }
 }
