@@ -26,7 +26,7 @@ public class PointService {
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "포인트 정보를 찾을 수 없습니다."));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Point getPointWithLock(Long userId) {
         return pointRepository.findByUserIdWithLock(userId)
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "포인트 정보를 찾을 수 없습니다."));
