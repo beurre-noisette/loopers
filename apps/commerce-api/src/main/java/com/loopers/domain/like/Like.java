@@ -24,9 +24,6 @@ public class Like extends BaseEntity {
     @Column(name = "target_id", nullable = false)
     private Long targetId;
     
-    @Version
-    private Long version;
-    
     protected Like() {}
     
     private Like(User user, TargetType targetType, Long targetId) {
