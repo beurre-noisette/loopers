@@ -21,4 +21,14 @@ public class ProductRepositoryImpl implements ProductRepository {
     public Optional<Product> findById(Long id) {
         return productJpaRepository.findById(id);
     }
+
+    @Override
+    public Optional<Product> findByIdWithLock(Long id) {
+        return productJpaRepository.findByIdWithLock(id);
+    }
+
+    @Override
+    public Product save(Product product) {
+        return productJpaRepository.save(product);
+    }
 }
