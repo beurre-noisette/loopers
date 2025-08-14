@@ -17,21 +17,23 @@ public class LikeService {
     }
 
     @Transactional
-    public void createLike(User user, Target target) {
+    public boolean createLike(User user, Target target) {
         try {
             if (likeRepository.existsByUserAndTarget(user, target.getType(), target.getId())) {
-                return;
+                return false;
             }
             
             Like like = Like.of(user, target);
             likeRepository.save(like);
+
+            return true;
         } catch (DataIntegrityViolationException e) {
-            // 다른 스레드가 이미 처리했으므로 무시
+            return false;
         }
     }
 
     @Transactional
-    public void cancelLike(User user, Target target) {
-        likeRepository.deleteByUserAndTarget(user, target.getType(), target.getId());
+    public boolean cancelLike(User user, Target target) {
+        return likeRepository.deleteByUserAndTarget(user, target.getType(), target.getId()) > 0;
     }
 }

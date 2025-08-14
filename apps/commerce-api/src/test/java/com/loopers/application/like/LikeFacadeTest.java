@@ -4,6 +4,7 @@ import com.loopers.domain.like.LikeCommand;
 import com.loopers.domain.like.LikeService;
 import com.loopers.domain.like.ProductTarget;
 import com.loopers.domain.like.TargetType;
+import com.loopers.domain.product.ProductService;
 import com.loopers.domain.user.Gender;
 import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserCommand;
@@ -29,6 +30,9 @@ class LikeFacadeTest {
     @Mock
     private LikeService likeService;
 
+    @Mock
+    private ProductService productService;
+
     @InjectMocks
     private LikeFacade likeFacade;
 
@@ -46,6 +50,7 @@ class LikeFacadeTest {
 
             User user = createTestUser();
             when(userService.findByUserId(userId)).thenReturn(user);
+            when(likeService.createLike(eq(user), any(ProductTarget.class))).thenReturn(true);
 
             // act
             likeFacade.createLike(command);
@@ -53,6 +58,7 @@ class LikeFacadeTest {
             // assert
             verify(userService).findByUserId(userId);
             verify(likeService).createLike(eq(user), any(ProductTarget.class));
+            verify(productService).increaseLikeCount(command.targetId());
         }
 
         @DisplayName("ProductTarget이 올바르게 생성된다.")
@@ -92,6 +98,7 @@ class LikeFacadeTest {
 
             User user = createTestUser();
             when(userService.findByUserId(userId)).thenReturn(user);
+            when(likeService.cancelLike(eq(user), any(ProductTarget.class))).thenReturn(true);
 
             // act
             likeFacade.cancelLike(command);
@@ -99,6 +106,7 @@ class LikeFacadeTest {
             // assert
             verify(userService).findByUserId(userId);
             verify(likeService).cancelLike(eq(user), any(ProductTarget.class));
+            verify(productService).decreaseLikeCount(command.targetId());
         }
     }
 

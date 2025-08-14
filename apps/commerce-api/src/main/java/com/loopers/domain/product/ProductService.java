@@ -38,4 +38,24 @@ public class ProductService {
         return products;
     }
 
+    @Transactional
+    public void increaseLikeCount(Long productId) {
+        Product product = productRepository.findByIdWithLock(productId)
+                .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
+
+        product.increaseLikeCount();
+
+        productRepository.save(product);
+    }
+
+    @Transactional
+    public void decreaseLikeCount(Long productId) {
+        Product product = productRepository.findByIdWithLock(productId)
+                .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
+
+        product.decreaseLikeCount();
+
+        productRepository.save(product);
+    }
+
 }

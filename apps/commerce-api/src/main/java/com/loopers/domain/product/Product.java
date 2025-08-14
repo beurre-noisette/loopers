@@ -30,6 +30,9 @@ public class Product extends BaseEntity {
     @JoinColumn(name = "brand_id", nullable = false)
     private Brand brand;
 
+    @Column(name = "like_count", nullable = false)
+    private Integer likeCount;
+
     protected Product() {}
 
     private Product(String name, String description, BigDecimal price, Integer stock, Brand brand) {
@@ -38,6 +41,17 @@ public class Product extends BaseEntity {
         this.price = price;
         this.stock = stock;
         this.brand = brand;
+        this.likeCount = 0;
+    }
+
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
     }
 
     public void decreaseStock(int quantity) {
