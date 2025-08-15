@@ -1,6 +1,3 @@
--- 데이터베이스 선택
-USE loopers;
-
 -- 브랜드 데이터 생성 (100개)
 INSERT INTO brand (name, description, created_at, updated_at)
 SELECT 
@@ -57,7 +54,6 @@ DELIMITER ;
 CALL generate_products();
 
 -- 좋아요 데이터 생성 (랜덤하게 일부 상품에 좋아요 추가)
--- 먼저 유저 데이터가 있어야 함
 INSERT INTO member (user_id, gender, birth_date, email, created_at, updated_at)
 SELECT 
     CONCAT('user_', n) as user_id,
@@ -76,7 +72,6 @@ FROM (
 ) numbers;
 
 -- 좋아요 데이터 (인기 상품은 더 많은 좋아요를 받도록)
--- 주의: 실제 FK 컬럼명은 테이블 구조에 따라 다를 수 있음
 INSERT INTO likes (user_id, target_type, target_id, created_at, updated_at)
 SELECT DISTINCT
     m.id as user_id,
@@ -95,12 +90,3 @@ WHERE
         ELSE 0.001                      -- 나머지: 0.1% 확률
     END)
 LIMIT 50000;  -- 총 5만개 좋아요
-
--- 생성된 데이터 확인
-SELECT 'Brands' as table_name, COUNT(*) as count FROM brand
-UNION ALL
-SELECT 'Products', COUNT(*) FROM product
-UNION ALL
-SELECT 'Members', COUNT(*) FROM member
-UNION ALL
-SELECT 'Likes', COUNT(*) FROM likes;

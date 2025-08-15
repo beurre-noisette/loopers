@@ -1,13 +1,7 @@
--- 데이터베이스 선택
-USE loopers;
-
--- 기존 데이터 정리 (안전을 위해)
-SET FOREIGN_KEY_CHECKS = 0;
-truncate likes;
-truncate product;
-truncate brand;
-truncate member;
-SET FOREIGN_KEY_CHECKS = 1;
+CREATE INDEX idx_product_brand_created ON product(brand_id, created_at DESC);
+CREATE INDEX idx_product_brand_price ON product(brand_id, price);
+CREATE INDEX idx_like_target ON likes(target_type, target_id);
+CREATE INDEX idx_product_like_count ON product(like_count DESC);
 
 -- 브랜드 데이터 생성 (100개)
 INSERT INTO brand (name, description, created_at, updated_at)
@@ -68,9 +62,6 @@ DELIMITER ;
 
 -- 프로시저 실행
 CALL generate_products_with_like_count();
-
--- 프로시저 정리
-DROP PROCEDURE generate_products_with_like_count;
 
 -- 사용자 데이터 생성 (1000명)
 INSERT INTO member (user_id, gender, birth_date, email, created_at, updated_at)
@@ -137,7 +128,6 @@ CALL generate_likes_data();
 -- 프로시저 정리
 DROP PROCEDURE generate_likes_data;
 
--- 중요: Product 테이블의 like_count 업데이트
 -- 각 상품의 실제 좋아요 수를 계산하여 like_count에 저장
 UPDATE product p 
 SET like_count = (
@@ -147,36 +137,3 @@ SET like_count = (
     AND l.target_id = p.id
 )
 where p.id > 0;
-
--- Phase 2에서 생성한 인덱스들 재생성
-CREATE INDEX idx_product_brand_created ON product(brand_id, created_at DESC);
-CREATE INDEX idx_product_brand_price ON product(brand_id, price);
-CREATE INDEX idx_like_target ON likes(target_type, target_id);
-
--- Phase 3을 위한 새로운 인덱스 생성
-CREATE INDEX idx_product_like_count ON product(like_count DESC);
-
--- 데이터 생성 결과 확인
-SELECT 'Data generation summary:' as info;
-SELECT COUNT(*) as brand_count FROM brand;
-SELECT COUNT(*) as product_count FROM product;
-SELECT COUNT(*) as user_count FROM member;
-SELECT COUNT(*) as likes_count FROM likes;
-
--- like_count 분포 확인
-SELECT 
-    MIN(like_count) as min_likes,
-    MAX(like_count) as max_likes,
-    AVG(like_count) as avg_likes,
-    COUNT(CASE WHEN like_count > 0 THEN 1 END) as products_with_likes,
-    COUNT(CASE WHEN like_count = 0 THEN 1 END) as products_without_likes
-FROM product;
-
--- 상위 10개 인기 상품 확인
-SELECT id, name, like_count, brand_id 
-FROM product 
-ORDER BY like_count DESC 
-LIMIT 10;
-
-SELECT 'Test data generation completed successfully!' as final_message;
-

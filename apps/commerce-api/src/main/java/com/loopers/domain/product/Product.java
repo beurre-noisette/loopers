@@ -10,7 +10,11 @@ import lombok.Getter;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "product")
+@Table(name = "product", indexes = {
+    @Index(name = "idx_product_brand_created", columnList = "brand_id, created_at DESC"),
+    @Index(name = "idx_product_brand_price", columnList = "brand_id, price"),
+    @Index(name = "idx_product_like_count", columnList = "like_count DESC")
+})
 @Getter
 public class Product extends BaseEntity {
 
