@@ -4,6 +4,7 @@ import com.loopers.domain.like.LikeCommand;
 import com.loopers.domain.like.LikeService;
 import com.loopers.domain.like.ProductTarget;
 import com.loopers.domain.like.TargetType;
+import com.loopers.application.product.ProductQuery;
 import com.loopers.domain.product.ProductService;
 import com.loopers.domain.user.Gender;
 import com.loopers.domain.user.User;
@@ -32,6 +33,9 @@ class LikeFacadeTest {
 
     @Mock
     private ProductService productService;
+
+    @Mock
+    private ProductQuery productQuery;
 
     @InjectMocks
     private LikeFacade likeFacade;

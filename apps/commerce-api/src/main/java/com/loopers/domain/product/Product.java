@@ -44,6 +44,16 @@ public class Product extends BaseEntity {
         this.likeCount = 0;
     }
 
+    public static Product of(ProductCommand.Create command, Brand brand) {
+        validateName(command.name());
+        validateDescription(command.description());
+        validatePrice(command.price());
+        validateStock(command.stock());
+        validateBrand(brand);
+
+        return new Product(command.name(), command.description(), command.price(), command.stock(), brand);
+    }
+
     public void increaseLikeCount() {
         this.likeCount++;
     }
@@ -69,6 +79,36 @@ public class Product extends BaseEntity {
     private static void validateQuantity(int quantity) {
         if (quantity <= 0) {
             throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "차감할 수량은 1개 이상이어야 합니다.");
+        }
+    }
+
+    private static void validateName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "상품명은 비어있을 수 없습니다.");
+        }
+    }
+    
+    private static void validateDescription(String description) {
+        if (description == null || description.isBlank()) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "상품 설명은 비어있을 수 없습니다.");
+        }
+    }
+    
+    private static void validatePrice(BigDecimal price) {
+        if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "상품 가격은 0원보다 커야 합니다.");
+        }
+    }
+    
+    private static void validateStock(Integer stock) {
+        if (stock == null || stock < 0) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "재고는 0개 이상이어야 합니다.");
+        }
+    }
+    
+    private static void validateBrand(Brand brand) {
+        if (brand == null) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "브랜드 정보는 필수입니다.");
         }
     }
 

@@ -44,12 +44,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 product.stock,
                 brand.id,
                 brand.name,
-                select(like.count())
-                    .from(like)
-                    .where(
-                        like.targetType.eq(TargetType.PRODUCT),
-                        like.targetId.eq(product.id)
-                    )
+                product.likeCount
             ))
             .from(product)
             .join(product.brand, brand)
@@ -89,12 +84,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 brand.id,
                 brand.name,
                 brand.description,
-                select(like.count())
-                    .from(like)
-                    .where(
-                        like.targetType.eq(TargetType.PRODUCT),
-                        like.targetId.eq(product.id)
-                    )
+                product.likeCount
             ))
             .from(product)
             .join(product.brand, brand)

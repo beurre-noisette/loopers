@@ -20,7 +20,7 @@ public interface ProductQueryRepository {
         Integer stock,
         Long brandId,
         String brandName,
-        Long likeCount
+        Integer likeCount
     ) {}
     
     record ProductDetailQueryData(
@@ -32,6 +32,6 @@ public interface ProductQueryRepository {
         Long brandId,
         String brandName,
         String brandDescription,
-        Long likeCount
+        Integer likeCount
     ) {}
 }
