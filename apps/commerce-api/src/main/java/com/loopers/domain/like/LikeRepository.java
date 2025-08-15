@@ -10,7 +10,7 @@ public interface LikeRepository {
 
     boolean existsByUserAndTarget(User user, TargetType targetType, Long targetId);
 
-    void deleteByUserAndTarget(User user, TargetType targetType, Long targetId);
+    int deleteByUserAndTarget(User user, TargetType targetType, Long targetId);
 
     List<Like> findByUser(User user);
 

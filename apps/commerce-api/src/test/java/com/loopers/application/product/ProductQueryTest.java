@@ -32,11 +32,14 @@ class ProductQueryTest {
     @Mock
     private ProductQueryRepository productQueryRepository;
 
+    @Mock
+    private ProductQueryCacheRepository productQueryCacheRepository;
+
     private ProductQuery productQuery;
 
     @BeforeEach
     void setUp() {
-        productQuery = new ProductQuery(productQueryRepository);
+        productQuery = new ProductQuery(productQueryRepository, productQueryCacheRepository);
     }
 
     @Test
@@ -68,10 +71,10 @@ class ProductQueryTest {
 
     private @NotNull Page<ProductQueryRepository.ProductQueryData> getProductQueryData(int page, int size) {
         ProductQueryRepository.ProductQueryData product1 = new ProductQueryRepository.ProductQueryData(
-                1L, "상품1", "설명1", BigDecimal.valueOf(10000), 100, 1L, "브랜드1", 5L
+                1L, "상품1", "설명1", BigDecimal.valueOf(10000), 100, 1L, "브랜드1", 5
         );
         ProductQueryRepository.ProductQueryData product2 = new ProductQueryRepository.ProductQueryData(
-                2L, "상품2", "설명2", BigDecimal.valueOf(20000), 200, 1L, "브랜드1", 10L
+                2L, "상품2", "설명2", BigDecimal.valueOf(20000), 200, 1L, "브랜드1", 10
         );
 
         Page<ProductQueryRepository.ProductQueryData> mockPage =
@@ -111,7 +114,7 @@ class ProductQueryTest {
         ProductQueryRepository.ProductDetailQueryData mockData =
                 new ProductQueryRepository.ProductDetailQueryData(
                         1L, "상품1", "설명1", BigDecimal.valueOf(10000), 100,
-                        1L, "브랜드1", "브랜드 설명", 5L
+                        1L, "브랜드1", "브랜드 설명", 5
                 );
 
         given(productQueryRepository.findProductDetailById(productId))

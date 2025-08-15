@@ -30,8 +30,8 @@ public class LikeRepositoryImpl implements LikeRepository {
     }
 
     @Override
-    public void deleteByUserAndTarget(User user, TargetType targetType, Long targetId) {
-        likeJpaRepository.deleteByUserAndTargetTypeAndTargetId(user, targetType, targetId);
+    public int deleteByUserAndTarget(User user, TargetType targetType, Long targetId) {
+        return likeJpaRepository.deleteByUserAndTargetTypeAndTargetId(user, targetType, targetId);
     }
 
     @Override
