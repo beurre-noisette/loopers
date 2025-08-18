@@ -9,7 +9,10 @@ import lombok.Getter;
 
 @Entity
 @Table(name = "likes", 
-       uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "target_type", "target_id"}))
+       uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "target_type", "target_id"}),
+       indexes = {
+           @Index(name = "idx_like_target", columnList = "target_type, target_id")
+       })
 @Getter
 public class Like extends BaseEntity {
     

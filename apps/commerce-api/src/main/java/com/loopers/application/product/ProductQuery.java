@@ -2,6 +2,7 @@ package com.loopers.application.product;
 
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,13 +13,17 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Component
+@Slf4j
 public class ProductQuery {
     
     private final ProductQueryRepository productQueryRepository;
+    private final ProductQueryCacheRepository productQueryCacheRepository;
     
     @Autowired
-    public ProductQuery(ProductQueryRepository productQueryRepository) {
+    public ProductQuery(ProductQueryRepository productQueryRepository,
+                       ProductQueryCacheRepository productQueryCacheRepository) {
         this.productQueryRepository = productQueryRepository;
+        this.productQueryCacheRepository = productQueryCacheRepository;
     }
     
     public ProductListResult getProducts(Long brandId, String sort, int page, int size) {
@@ -47,6 +52,27 @@ public class ProductQuery {
             .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
     }
     
+    public ProductDetailResult getProductDetailWithCache(Long productId) {
+        log.debug("DTO 캐시를 사용한 상품 상세 조회 시작 - Product ID: {}", productId);
+        
+        return productQueryCacheRepository.findDetailById(productId)
+                .orElseGet(() -> {
+                    log.debug("Cache Miss - Product ID: {}, DB에서 조회", productId);
+                    
+                    ProductDetailResult result = productQueryRepository.findProductDetailById(productId)
+                            .map(ProductDetailResult::from)
+                            .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
+                    
+                    productQueryCacheRepository.saveDetail(productId, result);
+                    
+                    return result;
+                });
+    }
+    
+    public void evictProductDetailCache(Long productId) {
+        productQueryCacheRepository.evictDetail(productId);
+    }
+    
     public record ProductQueryResult(
         Long id,
         String name,
@@ -55,7 +81,7 @@ public class ProductQuery {
         Integer stock,
         Long brandId,
         String brandName,
-        Long likeCount
+        Integer likeCount
     ) {
         public static ProductQueryResult from(ProductQueryRepository.ProductQueryData data) {
             return new ProductQueryResult(
@@ -78,7 +104,7 @@ public class ProductQuery {
         BigDecimal price,
         Integer stock,
         BrandInfo brand,
-        Long likeCount
+        Integer likeCount
     ) {
         public static ProductDetailResult from(ProductQueryRepository.ProductDetailQueryData data) {
             return new ProductDetailResult(

@@ -2,8 +2,6 @@ package com.loopers.infrastructure.product.query;
 
 import com.loopers.application.product.ProductQueryRepository;
 import com.loopers.application.product.ProductSortType;
-import com.loopers.domain.like.TargetType;
-import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -18,9 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.loopers.domain.brand.QBrand.brand;
-import static com.loopers.domain.like.QLike.like;
 import static com.loopers.domain.product.QProduct.product;
-import static com.querydsl.jpa.JPAExpressions.select;
 
 @Repository
 public class ProductQueryRepositoryImpl implements ProductQueryRepository {
@@ -44,12 +40,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 product.stock,
                 brand.id,
                 brand.name,
-                select(like.count())
-                    .from(like)
-                    .where(
-                        like.targetType.eq(TargetType.PRODUCT),
-                        like.targetId.eq(product.id)
-                    )
+                product.likeCount
             ))
             .from(product)
             .join(product.brand, brand)
@@ -89,12 +80,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 brand.id,
                 brand.name,
                 brand.description,
-                select(like.count())
-                    .from(like)
-                    .where(
-                        like.targetType.eq(TargetType.PRODUCT),
-                        like.targetId.eq(product.id)
-                    )
+                product.likeCount
             ))
             .from(product)
             .join(product.brand, brand)
@@ -116,16 +102,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         return switch (sortType) {
             case LATEST -> product.createdAt.desc();
             case PRICE_ASC -> product.price.asc();
-            case LIKES_DESC -> {
-                var likeCountSubquery = select(like.count())
-                    .from(like)
-                    .where(
-                        like.targetType.eq(TargetType.PRODUCT),
-                        like.targetId.eq(product.id)
-                    );
-                
-                yield new OrderSpecifier<>(Order.DESC, likeCountSubquery);
-            }
+            case LIKES_DESC -> product.likeCount.desc();
         };
     }
 }

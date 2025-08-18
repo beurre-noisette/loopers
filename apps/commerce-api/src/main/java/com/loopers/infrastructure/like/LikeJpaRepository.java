@@ -11,7 +11,7 @@ public interface LikeJpaRepository extends JpaRepository<Like, Long> {
 
     boolean existsByUserAndTargetTypeAndTargetId(User user, TargetType targetType, Long targetId);
 
-    void deleteByUserAndTargetTypeAndTargetId(User user, TargetType targetType, Long targetId);
+    int deleteByUserAndTargetTypeAndTargetId(User user, TargetType targetType, Long targetId);
 
     List<Like> findByUser(User user);
 
