@@ -29,6 +29,21 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+datasource:
+  mysql-jpa:
+    main:
+      jdbc-url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/loopers
+      username: ${MYSQL_USER:application}
+      password: "${MYSQL_PWD:application}"
+  redis:
+    database: 0
+    master:
+      host: ${REDIS_MASTER_HOST:localhost}
+      port: ${REDIS_MASTER_PORT:6379}
+    replicas:
+      - host: ${REDIS_REPLICA_HOST:localhost}
+        port: ${REDIS_REPLICA_PORT:6380}
+
 ---
 spring:
   config:
@@ -56,3 +71,21 @@ spring:
 springdoc:
   api-docs:
     enabled: false
+
+---
+spring.config.activate.on-profile: docker
+
+datasource:
+  mysql-jpa:
+    main:
+      jdbc-url: jdbc:mysql://mysql:3306/loopers
+      username: application
+      password: application
+
+  redis:
+    master:
+      host: redis-master
+      port: 6379
+    replicas:
+      - host: redis-readonly
+        port: 6379

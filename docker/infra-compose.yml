@@ -59,6 +59,21 @@ services:
       timeout: 2s
       retries: 10
 
+  pg-simulator:
+    build:
+      context: ..
+      dockerfile: apps/pg-simulator/Dockerfile
+    image: pg-simulator
+    depends_on:
+      - mysql
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=paymentuser
+      - MYSQL_PASSWORD=paymentuser
+
 volumes:
   mysql-8-data:
   redis_master_data:
