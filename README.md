@@ -24,7 +24,10 @@
     - [주문 흐름 중 하나라도 실패 시 전체 롤백 처리](https://github.com/beurre-noisette/loopers/blob/main/apps/commerce-api/src/test/java/com/loopers/application/order/OrderFacadeIntegrationTest.java#L170-L217)
     - [실패한 주문은 완전히 롤백되고, 성공한 주문만 커밋함](https://github.com/beurre-noisette/loopers/blob/main/apps/commerce-api/src/test/java/com/loopers/domain/order/OrderConcurrencyTest.java#L191-L249)
 
-### 3. 도메인 모델링
+### 3. 인덱스 최적화와 캐싱을 통한 조회 성능 향상
+- [좋아요순 정렬 1.2초 -> 9ms 성능 개선기](https://berrue.tistory.com/9)
+
+### 4. 도메인 모델링
 - **주요 도메인 설계**
     - [Product](https://github.com/beurre-noisette/loopers/blob/main/apps/commerce-api/src/main/java/com/loopers/domain/product/Product.java#L12-L61): 재고 관리 및 비즈니스 규칙
     - [Order](https://github.com/beurre-noisette/loopers/blob/main/apps/commerce-api/src/main/java/com/loopers/domain/order/Order.java#L11-L69): 주문 생성 및 결제 처리
