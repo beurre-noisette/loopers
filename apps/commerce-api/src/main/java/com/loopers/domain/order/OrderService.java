@@ -20,7 +20,7 @@ public class OrderService {
 
 
     @Transactional
-    public Order createOrder(String userId, OrderItems orderItems) {
+    public Order createOrder(Long userId, OrderItems orderItems) {
         Order order = Order.create(userId, orderItems);
         return orderRepository.save(order);
     }

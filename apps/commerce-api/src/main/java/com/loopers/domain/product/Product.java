@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table(name = "product", indexes = {
@@ -78,6 +79,29 @@ public class Product extends BaseEntity {
         }
 
         this.stock -= quantity;
+    }
+
+    public boolean hasEnoughStock(Integer requiredQuantity) {
+        return this.stock >= requiredQuantity;
+    }
+
+    public void validateStockAvailability(Integer quantity) {
+        if (quantity <= 0) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "주문 수량은 0보다 커야 합니다.");
+        }
+
+        if (!hasEnoughStock(quantity)) {
+            throw new CoreException(ErrorType.BAD_REQUEST,
+                    String.format("재고 부족 - 상품: %s, 요청: %s, 재고: %s",
+                            this.name, quantity, this.stock));
+        }
+    }
+
+    public static Product findById(List<Product> products, Long productId) {
+        return products.stream()
+                .filter(product -> product.getId().equals(productId))
+                .findFirst()
+                .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다. 상품 ID: " + productId));
     }
 
     private static void validateQuantity(int quantity) {

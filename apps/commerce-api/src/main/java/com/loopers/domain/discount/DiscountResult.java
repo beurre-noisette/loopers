@@ -24,4 +24,8 @@ public record DiscountResult(
     public BigDecimal getTotalDiscount() {
         return pointDiscount.add(couponDiscount);
     }
+
+    public BigDecimal calculateFinalAmount(BigDecimal originalAmount) {
+        return originalAmount.subtract(getTotalDiscount());
+    }
 }

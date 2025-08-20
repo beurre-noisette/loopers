@@ -29,10 +29,20 @@ public class OrderV1Controller implements OrderV1ApiSpec {
             .map(item -> new OrderCommand.CreateItem(item.productId(), item.quantity()))
             .toList();
 
+        OrderCommand.Create.CardInfo cardInfo = null;
+        if (request.cardInfo() != null) {
+            cardInfo = new OrderCommand.Create.CardInfo(
+                request.cardInfo().cardType(),
+                request.cardInfo().cardNo()
+            );
+        }
+
         OrderCommand.Create command = new OrderCommand.Create(
             commandItems,
             request.pointToDiscount(),
-            request.userCouponId()
+            request.userCouponId(),
+            request.paymentMethod(),
+            cardInfo
         );
 
         OrderInfo orderInfo = orderFacade.createOrder(userId, command);
