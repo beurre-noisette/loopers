@@ -8,22 +8,21 @@ import org.springframework.web.bind.annotation.*;
         name = "pg-client",
         url = "${pg.api.url:http://localhost:8082}"
 )
-@RequestMapping("/api/v1/payments")
 public interface PgClient {
 
-    @PostMapping
+    @PostMapping("/api/v1/payments")
     ApiResponse<PgPaymentDto.PaymentResponse> requestPayment(
             @RequestHeader("X-USER-ID") String userId,
             @RequestBody PgPaymentDto.PaymentRequest request
     );
 
-    @GetMapping("/{transactionKey}")
+    @GetMapping("/api/v1/payments/{transactionKey}")
     ApiResponse<PgPaymentDto.TransactionDetailResponse> getTransaction(
             @RequestHeader("X-USER-ID") String userId,
             @PathVariable("transactionKey") String transactionKey
     );
 
-    @GetMapping
+    @GetMapping("/api/v1/payments")
     ApiResponse<PgPaymentDto.TransactionDetailResponse> getTransactionByOrderId(
             @RequestHeader("X-USER-ID") String userId,
             @RequestParam("orderId") String orderId

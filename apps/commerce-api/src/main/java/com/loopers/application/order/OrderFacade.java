@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Component
@@ -31,7 +32,7 @@ public class OrderFacade {
 
     @Autowired
     public OrderFacade(OrderService orderService, UserService userService,
-                       ProductService productService, DiscountService discountService, 
+                       ProductService productService, DiscountService discountService,
                        StockReservationService stockReservationService,
                        ApplicationEventPublisher eventPublisher) {
         this.orderService = orderService;
@@ -43,8 +44,8 @@ public class OrderFacade {
     }
 
     @Transactional
-    public OrderInfo createOrder(String userIdStr, OrderCommand.Create command) {
-        User user = userService.findByUserId(userIdStr);
+    public OrderInfo createOrder(String accountId, OrderCommand.Create command) {
+        User user = userService.findByAccountId(accountId);
 
         List<Long> productIds = command.items().stream()
                 .map(OrderCommand.CreateItem::productId)
@@ -64,15 +65,15 @@ public class OrderFacade {
                 command.userCouponId()
         );
 
+        BigDecimal finalAmount = discount.calculateFinalAmount(order.getTotalAmount());
+
         order.waitForPayment();
 
         eventPublisher.publishEvent(new OrderCreatedEvent(
-            order.getId(),
-            userIdStr,
-            command.paymentMethod(),
-            command.cardInfo() != null ? 
-                new OrderCreatedEvent.CardInfo(command.cardInfo().cardType(), command.cardInfo().cardNo()) : 
-                null
+                order.getId(),
+                accountId,
+                finalAmount,
+                command.paymentDetails()
         ));
 
         return OrderInfo.from(order, discount);

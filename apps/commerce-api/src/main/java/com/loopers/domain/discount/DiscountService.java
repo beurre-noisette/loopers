@@ -49,4 +49,17 @@ public class DiscountService {
 
         return couponService.useCouponAndCalculateDiscount(userCouponId, orderId, orderAmount);
     }
+
+    public void rollbackDiscount(Long orderId) {
+        rollbackPointDiscount(orderId);
+        rollbackCouponDiscount(orderId);
+    }
+
+    private void rollbackPointDiscount(Long orderId) {
+        pointService.refundOrderDiscount(orderId);
+    }
+
+    private void rollbackCouponDiscount(Long orderId) {
+        couponService.rollbackCouponUsage(orderId);
+    }
 }

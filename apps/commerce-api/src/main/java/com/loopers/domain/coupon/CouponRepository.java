@@ -12,4 +12,6 @@ public interface CouponRepository {
     Optional<UserCoupon> findUserCouponById(Long id);
 
     Optional<UserCoupon> findByIdWithPessimisticLock(Long userCouponId);
+    
+    UserCoupon findUserCouponByOrderId(Long orderId);
 }

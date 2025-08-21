@@ -13,14 +13,6 @@ public record DiscountResult(
         );
     }
 
-    public static DiscountResult onlyPoint(BigDecimal pointDiscount) {
-        return of(pointDiscount, BigDecimal.ZERO);
-    }
-
-    public static DiscountResult none() {
-        return of(BigDecimal.ZERO, BigDecimal.ZERO);
-    }
-
     public BigDecimal getTotalDiscount() {
         return pointDiscount.add(couponDiscount);
     }

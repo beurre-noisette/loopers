@@ -1,9 +1,12 @@
 package com.loopers.application.payment;
 
+import com.loopers.application.order.event.OrderCreatedEvent;
+import com.loopers.domain.discount.DiscountService;
 import com.loopers.domain.order.Order;
 import com.loopers.domain.order.OrderService;
 import com.loopers.domain.payment.*;
-import com.loopers.domain.product.*;
+import com.loopers.domain.payment.command.PaymentCommandFactory;
+import com.loopers.domain.product.StockReservationService;
 import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserService;
 import com.loopers.support.error.CoreException;
@@ -13,91 +16,151 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.ZonedDateTime;
 
 @Component
 @Slf4j
 public class PaymentFacade {
 
     private final OrderService orderService;
-    private final PaymentServiceFactory paymentServiceFactory;
+    private final PaymentProcessorFactory paymentProcessorFactory;
+    private final PaymentCommandFactory paymentCommandFactory;
     private final StockReservationService stockReservationService;
     private final UserService userService;
-    private final ProductService  productService;
+    private final PaymentService paymentService;
+    private final DiscountService discountService;
 
     @Autowired
     public PaymentFacade(
             OrderService orderService,
-            PaymentServiceFactory paymentServiceFactory,
+            PaymentProcessorFactory paymentProcessorFactory,
+            PaymentCommandFactory paymentCommandFactory,
             StockReservationService stockReservationService,
             UserService userService,
-            ProductService productService
+            PaymentService paymentService,
+            DiscountService discountService
     ) {
         this.orderService = orderService;
-        this.paymentServiceFactory = paymentServiceFactory;
+        this.paymentProcessorFactory = paymentProcessorFactory;
+        this.paymentCommandFactory = paymentCommandFactory;
         this.stockReservationService = stockReservationService;
         this.userService = userService;
-        this.productService = productService;
+        this.paymentService = paymentService;
+        this.discountService = discountService;
     }
 
     @Transactional
-    public PaymentInfo.ProcessResponse processPayment(String userIdStr, PaymentCommand.ProcessPayment command) {
-        User user = userService.findByUserId(userIdStr);
+    public void processPaymentFromEvent(OrderCreatedEvent event) {
+        log.info("이벤트 기반 결제 처리 시작 - orderId: {}, amount: {}",
+                event.getOrderId(), event.getTotalAmount());
 
-        Order order = orderService.findById(command.orderId());
+        Order order = orderService.findById(event.getOrderId());
+        
+        try {
+            PaymentCommand paymentCommand = paymentCommandFactory.create(
+                    event.getOrderId(),
+                    event.getTotalAmount(),
+                    event.getPaymentDetails()
+            );
+            
+            User user = userService.findByAccountId(event.getUserId());
+            PaymentProcessor paymentProcessor = paymentProcessorFactory.getPaymentProcessor(paymentCommand.getMethod());
+            PaymentResult result = paymentProcessor.processPayment(user.getId(), paymentCommand);
+            
+            Payment payment = paymentService.createPaymentFromResult(
+                    event.getOrderId(),
+                    paymentCommand.getMethod(),
+                    result
+            );
 
-        validateOrderForPayment(order, user.getId());
+            handlePaymentResult(order, payment, result);
 
-        PaymentService paymentService = paymentServiceFactory.getPaymentService(command.method());
-
-        PaymentReference reference = (command.method() == PaymentMethod.CARD)
-                ? PaymentReference.orderWithCard(order.getId(), command.cardInfo())
-                : PaymentReference.order(order.getId());
-
-        PaymentResult result = paymentService.processPayment(
-                user.getId(),
-                order.getTotalAmount(),
-                reference
-        );
-
-        handlePaymentResult(order, result, command.method());
-
-        return PaymentInfo.ProcessResponse.from(command.orderId(), command.method(), result);
-    }
-
-    private void validateOrderForPayment(Order order, Long userId) {
-        if (!order.getUserId().equals(userId)) {
-            throw new CoreException(ErrorType.FORBIDDEN, "본인의 주문건만 결제할 수 있습니다.");
-        }
-
-        if (!order.isPaymentWaiting()) {
-            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT,
-                    "결제 대기 상태의 주문만 결제할 수 있습니다. 현재 상태: " + order.getStatus());
+        } catch (Exception e) {
+            log.error("이벤트 기반 결제 처리 실패 - orderId: {}", event.getOrderId(), e);
+            
+            rollbackOrder(order, "결제 처리 중 시스템 오류: " + e.getMessage());
         }
     }
 
-    private void handlePaymentResult(Order order, PaymentResult result, PaymentMethod method) {
+    @Transactional
+    public void handlePaymentCallback(String transactionKey, String orderId, String status, String reason) {
+        log.info("PG 콜백 처리 시작 - transactionKey: {}, orderId: {}, status: {}",
+                transactionKey, orderId, status);
+
+        try {
+            Long orderIdInOurService = Long.parseLong(orderId);
+            Order order = orderService.findById(orderIdInOurService);
+            Payment payment = paymentService.findByOrderId(orderIdInOurService)
+                    .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND,
+                            "결제 정보를 찾을 수 없습니다. orderId: " + orderId));
+
+            PaymentStatus paymentStatus = PaymentStatus.valueOf(status.toUpperCase());
+            PaymentResult result = new PaymentResult(
+                    payment.getId(),
+                    payment.getAmount(),
+                    paymentStatus,
+                    ZonedDateTime.now(),
+                    reason != null ? reason : "",
+                    transactionKey
+            );
+
+            handlePaymentResult(order, payment, result);
+
+            log.info("PG 콜백 처리 완료 - transactionKey: {}, orderId: {}", transactionKey, orderId);
+
+        } catch (Exception e) {
+            log.error("PG 콜백 처리 실패 - transactionKey: {}, orderId: {}", transactionKey, orderId, e);
+            throw e;
+        }
+    }
+
+    private void handlePaymentResult(Order order, Payment payment, PaymentResult result) {
         switch (result.status()) {
-            case SUCCESS -> completeOrder(order);
-            case PROCESSING -> order.processingPayment();
-            case FAILED -> log.error("결제 실패 - orderId: {}, message: {}", order.getId(), result.message());
+            case SUCCESS -> {
+                completeOrder(order);
+                log.info("결제 성공 및 주문 완료 - orderId: {}, paymentId: {}, transactionKey: {}",
+                        order.getId(), payment.getId(), result.transactionKey());
+            }
+            case PROCESSING -> {
+                order.processingPayment();
+                log.info("결제 처리 중 - orderId: {}, paymentId: {}, transactionKey: {}", 
+                        order.getId(), payment.getId(), result.transactionKey());
+            }
+            case FAILED -> {
+                log.error("결제 실패 - orderId: {}, paymentId: {}, reason: {}",
+                        order.getId(), payment.getId(), result.message());
+                rollbackOrder(order, result.message());
+            }
+        }
+    }
+    
+    private void rollbackOrder(Order order, String failureReason) {
+        log.info("주문 롤백 시작 - orderId: {}, reason: {}", order.getId(), failureReason);
+        
+        try {
+            stockReservationService.releaseReservation(order.getId());
+            log.info("재고 예약 해제 완료 - orderId: {}", order.getId());
+            
+            discountService.rollbackDiscount(order.getId());
+            log.info("할인 수단 복구 완료 - orderId: {}", order.getId());
+            
+            order.cancel("결제 실패: " + failureReason);
+            log.info("주문 취소 완료 - orderId: {}, status: CANCELLED", order.getId());
+        } catch (Exception e) {
+            log.error("주문 롤백 중 오류 발생 - orderId: {}", order.getId(), e);
+            order.cancel("결제 실패 및 롤백 처리 중 오류: " + e.getMessage());
         }
     }
 
     private void completeOrder(Order order) {
-        stockReservationService.confirmReservation(order.getId());
+        try {
+            stockReservationService.confirmReservation(order.getId());
 
-        var reservations = stockReservationService.getReservations(order.getId());
-        List<Long> productIds = reservations.stream()
-                .map(StockReservation::getProductId)
-                .toList();
-        List<Product> products = productService.findProductsByIds(productIds);
-
-        reservations.forEach(reservation -> {
-            Product product = Product.findById(products, reservation.getProductId());
-            product.decreaseStock(reservation.getQuantity());
-        });
-
-        order.completePayment();
+            order.completePayment();
+        } catch (Exception e) {
+            log.error("주문 완료 처리 중 오류 발생 - orderId: {}", order.getId(), e);
+            throw e;
+        }
     }
+
 }

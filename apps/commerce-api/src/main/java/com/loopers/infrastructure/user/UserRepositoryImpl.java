@@ -23,12 +23,12 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public boolean existsByUserId(String userId) {
-        return userJpaRepository.existsByUserId(userId);
+    public boolean existsByAccountId(String accountId) {
+        return userJpaRepository.existsByAccountId(accountId);
     }
 
     @Override
-    public Optional<User> findByUserId(String userId) {
-        return Optional.ofNullable(userJpaRepository.findByUserId(userId));
+    public Optional<User> findByAccountId(String accountId) {
+        return Optional.ofNullable(userJpaRepository.findByAccountId(accountId));
     }
 }

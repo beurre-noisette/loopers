@@ -119,4 +119,37 @@ public class PointService {
         pointHistoryRepository.save(pointHistory);
     }
 
+    @Transactional
+    public void refundOrderDiscount(Long orderId) {
+        PointHistory discountHistory = pointHistoryRepository
+                .findByReferenceTypeAndReferenceIdAndTransactionType(
+                        ReferenceType.ORDER, 
+                        orderId, 
+                        PointTransactionType.ORDER_DISCOUNT
+                ).orElse(null);
+        
+        if (discountHistory == null) {
+            return;
+        }
+        
+        Long userId = discountHistory.getUserId();
+        BigDecimal refundAmount = discountHistory.getAmount().negate();
+        
+        Point point = getPointWithLock(userId);
+        point.charge(refundAmount);
+        
+        Point savedPoint = pointRepository.save(point);
+        
+        PointHistory refundHistory = PointHistory.create(
+                new PointHistoryCommand.Create(
+                        userId,
+                        refundAmount,
+                        savedPoint.getBalance(),
+                        PointTransactionType.REFUND,
+                        PointReference.order(orderId)
+                )
+        );
+        pointHistoryRepository.save(refundHistory);
+    }
+
 }

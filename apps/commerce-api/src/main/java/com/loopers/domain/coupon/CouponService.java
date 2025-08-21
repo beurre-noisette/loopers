@@ -49,4 +49,14 @@ public class CouponService {
         return couponRepository.findUserCouponById(userCouponId)
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "발급된 쿠폰을 찾을 수 없습니다."));
     }
+    
+    @Transactional
+    public void rollbackCouponUsage(Long orderId) {
+        UserCoupon userCoupon = couponRepository.findUserCouponByOrderId(orderId);
+        
+        if (userCoupon != null) {
+            userCoupon.rollback();
+            couponRepository.save(userCoupon);
+        }
+    }
 }

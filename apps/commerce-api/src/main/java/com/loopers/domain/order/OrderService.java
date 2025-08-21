@@ -33,7 +33,7 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<Order> findByUserId(String userId) {
+    public List<Order> findByUserId(Long userId) {
         return orderRepository.findByUserId(userId);
     }
 }

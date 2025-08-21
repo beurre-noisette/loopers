@@ -81,6 +81,12 @@ public class Product extends BaseEntity {
         this.stock -= quantity;
     }
 
+    public void increaseStock(int quantity) {
+        validateQuantity(quantity);
+
+        this.stock += quantity;
+    }
+
     public boolean hasEnoughStock(Integer requiredQuantity) {
         return this.stock >= requiredQuantity;
     }

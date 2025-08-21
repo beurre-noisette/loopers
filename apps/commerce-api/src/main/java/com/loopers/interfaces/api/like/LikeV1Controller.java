@@ -21,9 +21,9 @@ public class LikeV1Controller implements LikeV1ApiSpec {
     @PostMapping("/products/{productId}")
     public ApiResponse<Object> createProductLike(
             @PathVariable Long productId,
-            @RequestHeader("X-USER-ID") String userId
+            @RequestHeader("X-USER-ID") String accountId
     ) {
-        LikeCommand.Create command = new LikeCommand.Create(userId, TargetType.PRODUCT, productId);
+        LikeCommand.Create command = new LikeCommand.Create(accountId, TargetType.PRODUCT, productId);
 
         likeFacade.createLike(command);
 
@@ -33,9 +33,9 @@ public class LikeV1Controller implements LikeV1ApiSpec {
     @DeleteMapping("/products/{productId}")
     public ApiResponse<Object> cancelProductLike(
             @PathVariable Long productId,
-            @RequestHeader("X-USER-ID") String userId
+            @RequestHeader("X-USER-ID") String accountId
     ) {
-        LikeCommand.Create command = new LikeCommand.Create(userId, TargetType.PRODUCT, productId);
+        LikeCommand.Create command = new LikeCommand.Create(accountId, TargetType.PRODUCT, productId);
 
         likeFacade.cancelLike(command);
         

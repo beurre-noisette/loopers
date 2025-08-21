@@ -6,12 +6,12 @@ import com.loopers.domain.user.User;
 import java.math.BigDecimal;
 
 public record UserPointInfo(
-        String userId,
+        String accountId,
         BigDecimal point
 ) {
     public static UserPointInfo from(User user, Point point) {
         return new UserPointInfo(
-                user.getUserId(),
+                user.getAccountId(),
                 point.getBalance()
         );
     }

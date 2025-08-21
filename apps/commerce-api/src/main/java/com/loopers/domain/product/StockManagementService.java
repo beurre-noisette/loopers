@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class StockManagementService {
@@ -38,6 +39,30 @@ public class StockManagementService {
                 lockedProduct.decreaseStock(quantity);
                 productRepository.save(lockedProduct);
             }
+        }
+    }
+
+    @Transactional
+    public void increaseStock(List<StockReservation> reservations) {
+        Map<Long, Integer> productQuantityMap = reservations.stream()
+                .collect(Collectors.groupingBy(
+                        StockReservation::getProductId,
+                        Collectors.summingInt(StockReservation::getQuantity)
+                ));
+
+        List<Long> productIds = List.copyOf(productQuantityMap.keySet());
+        List<Long> sortedProductIds = productIds.stream()
+                .sorted()
+                .toList();
+
+        for (Long productId : sortedProductIds) {
+            Integer quantity = productQuantityMap.get(productId);
+            
+            Product lockedProduct = productRepository.findByIdWithLock(productId)
+                    .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
+
+            lockedProduct.increaseStock(quantity);
+            productRepository.save(lockedProduct);
         }
     }
 }

@@ -11,14 +11,14 @@ import java.time.LocalDate;
 public class UserV1Dto {
 
     public record UserResponse(
-            String userId,
+            String accountId,
             String email,
             LocalDate birthDate,
             Gender gender
     ) {
         public static UserResponse from(UserInfo userInfo) {
             return new UserResponse(
-                    userInfo.userId(),
+                    userInfo.accountId(),
                     userInfo.email(),
                     userInfo.birthDate(),
                     userInfo.gender()
@@ -29,7 +29,7 @@ public class UserV1Dto {
     public record UserSignUpRequest(
             @NotBlank
             @NotNull
-            String userId,
+            String accountId,
 
             @NotBlank
             @NotNull
@@ -44,7 +44,7 @@ public class UserV1Dto {
     ) {
         public UserCommand.Create toCommand() {
             return new UserCommand.Create(
-                    userId,
+                    accountId,
                     email,
                     birthDate,
                     gender

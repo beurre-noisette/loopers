@@ -2,28 +2,38 @@ package com.loopers.domain.payment;
 
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import lombok.Getter;
 
-public class PaymentCommand {
+import java.math.BigDecimal;
+import java.util.Map;
 
-    public record ProcessPayment(
-            Long orderId,
-            PaymentMethod method,
-            CardInfo cardInfo
-    ) {
-        public ProcessPayment {
-            if (orderId == null) {
-                throw new CoreException(ErrorType.BAD_REQUEST, "주문 ID는 필수입니다.");
-            }
-
-            if (method == null) {
-                method = PaymentMethod.POINT;
-            }
-
-            if (method == PaymentMethod.CARD && cardInfo == null) {
-                throw new CoreException(ErrorType.BAD_REQUEST, "카드 결제 시 카드 정보는 필수입니다.");
-            }
+@Getter
+public abstract class PaymentCommand {
+    protected final Long orderId;
+    protected final PaymentMethod method;
+    protected final BigDecimal amount;
+    
+    protected PaymentCommand(Long orderId, PaymentMethod method, BigDecimal amount) {
+        if (orderId == null) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "주문 ID는 필수입니다.");
         }
+
+        if (method == null) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "결제 수단은 필수입니다.");
+        }
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "결제 금액은 0보다 커야 합니다.");
+        }
+        
+        this.orderId = orderId;
+        this.method = method;
+        this.amount = amount;
     }
+
+    public abstract void validate();
+    
+    public abstract Map<String, Object> toDetails();
 
     public record CardInfo(
             String cardType,

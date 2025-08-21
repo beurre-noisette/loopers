@@ -1,21 +1,26 @@
 package com.loopers.application.order.event;
 
-import com.loopers.domain.payment.PaymentMethod;
+import com.loopers.domain.payment.PaymentDetails;
 import lombok.Getter;
+
+import java.math.BigDecimal;
 
 @Getter
 public class OrderCreatedEvent {
     private final Long orderId;
     private final String userId;
-    private final PaymentMethod paymentMethod;
-    private final CardInfo cardInfo;
+    private final BigDecimal totalAmount;
+    private final PaymentDetails paymentDetails;
     
-    public OrderCreatedEvent(Long orderId, String userId, PaymentMethod paymentMethod, CardInfo cardInfo) {
+    public OrderCreatedEvent(
+            Long orderId,
+            String userId,
+            BigDecimal totalAmount,
+            PaymentDetails paymentDetails
+    ) {
         this.orderId = orderId;
         this.userId = userId;
-        this.paymentMethod = paymentMethod;
-        this.cardInfo = cardInfo;
+        this.totalAmount = totalAmount;
+        this.paymentDetails = paymentDetails;
     }
-
-    public record CardInfo(String cardType, String cardNo) {}
 }

@@ -45,4 +45,9 @@ public class CouponRepositoryImpl implements CouponRepository {
     public Optional<UserCoupon> findByIdWithPessimisticLock(Long userCouponId) {
         return userCouponJpaRepository.findByIdWithPessimisticLock(userCouponId);
     }
+    
+    @Override
+    public UserCoupon findUserCouponByOrderId(Long orderId) {
+        return userCouponJpaRepository.findByOrderId(orderId);
+    }
 }

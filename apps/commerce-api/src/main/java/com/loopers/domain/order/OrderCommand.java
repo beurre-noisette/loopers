@@ -1,6 +1,6 @@
 package com.loopers.domain.order;
 
-import com.loopers.domain.payment.PaymentMethod;
+import com.loopers.domain.payment.PaymentDetails;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 
@@ -13,8 +13,7 @@ public class OrderCommand {
             List<CreateItem> items,
             BigDecimal pointToDiscount,
             Long userCouponId,
-            PaymentMethod paymentMethod,
-            CardInfo cardInfo
+            PaymentDetails paymentDetails
     ) {
         public Create {
             if (items == null || items.isEmpty()) {
@@ -25,23 +24,10 @@ public class OrderCommand {
                 pointToDiscount = BigDecimal.ZERO;
             }
 
-            if (paymentMethod == null) {
-                throw new CoreException(ErrorType.BAD_REQUEST, "결제 방법은 필수입니다.");
-            }
-
-            if (paymentMethod == PaymentMethod.CARD && cardInfo == null) {
-                throw new CoreException(ErrorType.BAD_REQUEST, "카드 결제 시 카드 정보는 필수입니다.");
-            }
-
-            if (paymentMethod == PaymentMethod.POINT && cardInfo != null) {
-                throw new CoreException(ErrorType.BAD_REQUEST, "포인트 결제 시 카드 정보는 불필요합니다.");
+            if (paymentDetails == null) {
+                throw new CoreException(ErrorType.BAD_REQUEST, "결제 정보는 필수입니다.");
             }
         }
-
-        public record CardInfo(
-            String cardType,
-            String cardNo
-        ) {}
     }
 
     public record CreateItem(

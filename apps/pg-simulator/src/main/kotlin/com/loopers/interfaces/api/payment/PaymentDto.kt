@@ -18,7 +18,10 @@ object PaymentDto {
     ) {
         companion object {
             private val REGEX_CARD_NO = Regex("^\\d{4}-\\d{4}-\\d{4}-\\d{4}$")
-            private const val PREFIX_CALLBACK_URL = "http://localhost:8080"
+            private val ALLOWED_CALLBACK_URL_PREFIXES = listOf(
+                "http://localhost:8080",
+                "http://host.docker.internal:8080"
+            )
         }
 
         fun validate() {
@@ -31,8 +34,8 @@ object PaymentDto {
             if (amount <= 0) {
                 throw CoreException(ErrorType.BAD_REQUEST, "결제금액은 양의 정수여야 합니다.")
             }
-            if (!callbackUrl.startsWith(PREFIX_CALLBACK_URL)) {
-                throw CoreException(ErrorType.BAD_REQUEST, "콜백 URL 은 $PREFIX_CALLBACK_URL 로 시작해야 합니다.")
+            if (!ALLOWED_CALLBACK_URL_PREFIXES.any { callbackUrl.startsWith(it) }) {
+                throw CoreException(ErrorType.BAD_REQUEST, "콜백 URL 은 ${ALLOWED_CALLBACK_URL_PREFIXES.joinToString(" 또는 ")} 로 시작해야 합니다.")
             }
         }
 
