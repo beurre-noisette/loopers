@@ -54,9 +54,9 @@ DELIMITER ;
 CALL generate_products();
 
 -- 좋아요 데이터 생성 (랜덤하게 일부 상품에 좋아요 추가)
-INSERT INTO member (user_id, gender, birth_date, email, created_at, updated_at)
+INSERT INTO member (account_id, gender, birth_date, email, created_at, updated_at)
 SELECT 
-    CONCAT('user_', n) as user_id,
+    CONCAT('user_', n) as account_id,
     IF(RAND() > 0.5, 'MALE', 'FEMALE') as gender,
     DATE_SUB(CURDATE(), INTERVAL FLOOR(20 + RAND() * 40) YEAR) as birth_date,
     CONCAT('user', n, '@test.com') as email,

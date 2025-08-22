@@ -65,7 +65,7 @@ class UserV1ApiE2ETest {
             assertAll(
                     () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
                     () -> assertNotNull(response.getBody()),
-                    () -> assertEquals(request.userId(), response.getBody().data().userId()),
+                    () -> assertEquals(request.accountId(), response.getBody().data().accountId()),
                     () -> assertEquals(request.email(), response.getBody().data().email()),
                     () -> {
                         LocalDate expectedDate = LocalDate.parse(request.birthDate());
@@ -105,10 +105,10 @@ class UserV1ApiE2ETest {
         @Test
         void returnUser_whenGetUser() {
             // arrange
-            String userId = "testUser";
-            User savedUser = userRepository.save(User.of(new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE)));
+            String accountId = "testUser";
+            User savedUser = userRepository.save(User.of(new UserCommand.Create(accountId, "test@gmail.com", "1996-08-16", Gender.MALE)));
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", userId);
+            headers.set("X-USER-ID", accountId);
 
             // act
             ParameterizedTypeReference<ApiResponse<UserV1Dto.UserResponse>> responseType = new ParameterizedTypeReference<>() {};
@@ -122,7 +122,7 @@ class UserV1ApiE2ETest {
             // assert
             assertAll(
                     () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
-                    () -> assertEquals(userId, response.getBody().data().userId()),
+                    () -> assertEquals(accountId, response.getBody().data().accountId()),
                     () -> assertEquals(savedUser.getEmail(), response.getBody().data().email())
             );
         }

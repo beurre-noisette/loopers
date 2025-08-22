@@ -36,7 +36,7 @@ class OrderServiceTest {
         @Test
         void createOrder_success() {
             // arrange
-            String userId = "testUser";
+            Long userId = 1L;
             OrderItem orderItem1 = new OrderItem(1L, 2, new BigDecimal("10000"));
             OrderItem orderItem2 = new OrderItem(2L, 1, new BigDecimal("5000"));
             OrderItems orderItems = OrderItems.from(List.of(orderItem1, orderItem2));
@@ -62,7 +62,7 @@ class OrderServiceTest {
         @Test
         void createOrder_callsRepositorySave() {
             // arrange
-            String userId = "testUser";
+            Long userId = 1L;
             OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
             OrderItems orderItems = OrderItems.from(List.of(orderItem));
 
@@ -88,7 +88,7 @@ class OrderServiceTest {
             Long orderId = 1L;
             OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
             OrderItems orderItems = OrderItems.from(List.of(orderItem));
-            Order expectedOrder = Order.create("testUser", orderItems);
+            Order expectedOrder = Order.create(1L, orderItems);
             
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(expectedOrder));
 
@@ -120,7 +120,7 @@ class OrderServiceTest {
         @Test
         void returnAllOrders_whenFindByExistsUserId() {
             // arrange
-            String userId = "testUser";
+            Long userId = 1L;
             OrderItem orderItem1 = new OrderItem(1L, 1, new BigDecimal("10000"));
             OrderItem orderItem2 = new OrderItem(2L, 2, new BigDecimal("5000"));
             
@@ -143,7 +143,7 @@ class OrderServiceTest {
         @Test
         void findByUserId_returnsEmptyList_whenNoOrdersExist() {
             // arrange
-            String userId = "userWithNoOrders";
+            Long userId = 1L;
             when(orderRepository.findByUserId(userId)).thenReturn(List.of());
 
             // act

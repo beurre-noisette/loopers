@@ -79,7 +79,7 @@ class LikeCacheIntegrationTest {
     void whenLikeProduct_cacheIsEvictedAndLikeCountUpdated() {
         // arrange
         Long productId = testProduct.getId();
-        String userId = testUser.getUserId();
+        String userId = testUser.getAccountId();
         
         // 1차 조회로 캐시 저장 (like_count = 0)
         ProductQuery.ProductDetailResult firstResult = productQuery.getProductDetailWithCache(productId);
@@ -101,7 +101,7 @@ class LikeCacheIntegrationTest {
     void whenCancelLike_cacheIsEvictedAndLikeCountUpdated() {
         // arrange
         Long productId = testProduct.getId();
-        String userId = testUser.getUserId();
+        String userId = testUser.getAccountId();
         
         LikeCommand.Create likeCommand = new LikeCommand.Create(userId, TargetType.PRODUCT, productId);
         
@@ -134,13 +134,13 @@ class LikeCacheIntegrationTest {
         user3 = userRepository.save(user3);
         
         // act - 3명이 순차적으로 좋아요
-        likeFacade.createLike(new LikeCommand.Create(testUser.getUserId(), TargetType.PRODUCT, productId));
+        likeFacade.createLike(new LikeCommand.Create(testUser.getAccountId(), TargetType.PRODUCT, productId));
         ProductQuery.ProductDetailResult result1 = productQuery.getProductDetailWithCache(productId);
 
-        likeFacade.createLike(new LikeCommand.Create(user2.getUserId(), TargetType.PRODUCT, productId));
+        likeFacade.createLike(new LikeCommand.Create(user2.getAccountId(), TargetType.PRODUCT, productId));
         ProductQuery.ProductDetailResult result2 = productQuery.getProductDetailWithCache(productId);
 
-        likeFacade.createLike(new LikeCommand.Create(user3.getUserId(), TargetType.PRODUCT, productId));
+        likeFacade.createLike(new LikeCommand.Create(user3.getAccountId(), TargetType.PRODUCT, productId));
         ProductQuery.ProductDetailResult finalResult = productQuery.getProductDetailWithCache(productId);
         
         // assert - 최종 확인

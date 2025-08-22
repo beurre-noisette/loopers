@@ -4,6 +4,7 @@ import com.loopers.application.order.OrderFacade;
 import com.loopers.domain.brand.Brand;
 import com.loopers.domain.brand.BrandRepository;
 import com.loopers.domain.order.OrderCommand;
+import com.loopers.domain.payment.PaymentDetails;
 import com.loopers.domain.point.PointReference;
 import com.loopers.domain.point.PointService;
 import com.loopers.domain.user.Gender;
@@ -107,7 +108,8 @@ class DeadlockPreventionTest {
                                             new OrderCommand.CreateItem(finalProduct3.getId(), 1)
                                     ),
                                     BigDecimal.ZERO,
-                                    null
+                                    null,
+                                    new PaymentDetails.Point()
                             );
                         } else {
                             // 홀수 스레드: product3 → product1 → product2 순서 (역순)
@@ -118,11 +120,12 @@ class DeadlockPreventionTest {
                                             new OrderCommand.CreateItem(finalProduct2.getId(), 1)
                                     ),
                                     BigDecimal.ZERO,
-                                    null
+                                    null,
+                                    new PaymentDetails.Point()
                             );
                         }
                         
-                        orderFacade.createOrder(user.getUserId(), command);
+                        orderFacade.createOrder(user.getAccountId(), command);
                         successCount.incrementAndGet();
                     } catch (Exception e) {
                         failureCount.incrementAndGet();

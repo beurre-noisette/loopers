@@ -82,7 +82,7 @@ class LikeConcurrencyTest {
         AtomicInteger successCount = new AtomicInteger(0);
 
         LikeCommand.Create command = new LikeCommand.Create(
-                testUser.getUserId(),
+                testUser.getAccountId(),
                 testTarget.getType(),
                 testTarget.getId()
         );
@@ -143,7 +143,7 @@ class LikeConcurrencyTest {
                 executor.submit(() -> {
                     try {
                         LikeCommand.Create command = new LikeCommand.Create(
-                                user.getUserId(),
+                                user.getAccountId(),
                                 testTarget.getType(),
                                 testTarget.getId()
                         );
@@ -185,7 +185,7 @@ class LikeConcurrencyTest {
         AtomicInteger cancelSuccessCount = new AtomicInteger(0);
 
         LikeCommand.Create command = new LikeCommand.Create(
-                testUser.getUserId(),
+                testUser.getAccountId(),
                 testTarget.getType(),
                 testTarget.getId()
         );
@@ -259,7 +259,7 @@ class LikeConcurrencyTest {
                 executor.submit(() -> {
                     try {
                         LikeCommand.Create command = new LikeCommand.Create(
-                                user.getUserId(),
+                                user.getAccountId(),
                                 testTarget.getType(),
                                 testTarget.getId()
                         );

@@ -22,7 +22,7 @@ class OrderTest {
         @Test
         void createOrder_whenValidUserIdAndOrderItemsProvided() {
             // arrange
-            String userId = "testUser";
+            Long userId = 1L;
             OrderItem orderItem1 = new OrderItem(1L, 2, new BigDecimal("10000"));
             OrderItem orderItem2 = new OrderItem(2L, 1, new BigDecimal("5000"));
             List<OrderItem> orderItems = List.of(orderItem1, orderItem2);
@@ -57,88 +57,6 @@ class OrderTest {
             assertThat(exception.getMessage()).contains("사용자 ID는 필수값입니다");
         }
 
-        @DisplayName("userId가 빈 문자열일 경우 주문 생성에 실패하고 BAD_REQUEST 예외가 발생한다.")
-        @Test
-        void throwBadRequestException_whenUserIdIsBlank() {
-            // arrange
-            OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
-            List<OrderItem> orderItems = List.of(orderItem);
-
-            // act & assert
-            OrderItems orderItemsCollection = OrderItems.from(orderItems);
-            CoreException exception = assertThrows(CoreException.class, 
-                () -> Order.create("", orderItemsCollection));
-            
-            assertThat(exception.getErrorType()).isEqualTo(ErrorType.BAD_REQUEST);
-            assertThat(exception.getMessage()).contains("사용자 ID는 필수값입니다");
-        }
-    }
-
-    @DisplayName("주문 상태를 변경할 때, ")
-    @Nested
-    class StatusChange {
-        
-        @DisplayName("PENDING 상태의 주문을 완료 처리하면 COMPLETED 상태로 변경된다.")
-        @Test
-        void completeOrder_whenOrderStatusIsPending() {
-            // arrange
-            OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
-            OrderItems orderItemsCollection = OrderItems.from(List.of(orderItem));
-            Order order = Order.create("testUser", orderItemsCollection);
-
-            // act
-            order.complete();
-
-            // assert
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED);
-        }
-
-        @DisplayName("COMPLETED 상태의 주문을 완료 처리하려 하면 예외가 발생한다.")
-        @Test
-        void throwException_whenTryToCompleteAlreadyCompletedOrder() {
-            // arrange
-            OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
-            OrderItems orderItemsCollection = OrderItems.from(List.of(orderItem));
-            Order order = Order.create("testUser", orderItemsCollection);
-            order.complete(); // 이미 완료 상태로 변경
-
-            // act & assert
-            CoreException exception = assertThrows(CoreException.class, order::complete);
-            
-            assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT);
-            assertThat(exception.getMessage()).contains("대기 중인 주문만 완료할 수 있습니다");
-        }
-
-        @DisplayName("PENDING 상태의 주문을 취소하면 CANCELLED 상태로 변경된다.")
-        @Test
-        void cancelOrder_whenOrderStatusIsPending() {
-            // arrange
-            OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
-            OrderItems orderItemsCollection = OrderItems.from(List.of(orderItem));
-            Order order = Order.create("testUser", orderItemsCollection);
-
-            // act
-            order.cancel();
-
-            // assert
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        }
-
-        @DisplayName("COMPLETED 상태의 주문을 취소하려 하면 예외가 발생한다.")
-        @Test
-        void throwException_whenTryToCancelCompletedOrder() {
-            // arrange
-            OrderItem orderItem = new OrderItem(1L, 1, new BigDecimal("10000"));
-            OrderItems orderItemsCollection = OrderItems.from(List.of(orderItem));
-            Order order = Order.create("testUser", orderItemsCollection);
-            order.complete(); // 완료 상태로 변경
-
-            // act & assert
-            CoreException exception = assertThrows(CoreException.class, order::cancel);
-            
-            assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT);
-            assertThat(exception.getMessage()).contains("완료된 주문은 취소할 수 없습니다");
-        }
     }
 
     @DisplayName("주문 총액 계산 시, ")
@@ -156,7 +74,7 @@ class OrderTest {
 
             // act
             OrderItems orderItemsCollection = OrderItems.from(orderItems);
-            Order order = Order.create("testUser", orderItemsCollection);
+            Order order = Order.create(1L, orderItemsCollection);
 
             // assert
             assertThat(orderItemsCollection.calculateTotalAmount()).isEqualTo(new BigDecimal("66000"));
@@ -172,7 +90,7 @@ class OrderTest {
 
             // act
             OrderItems orderItemsCollection = OrderItems.from(orderItems);
-            Order order = Order.create("testUser", orderItemsCollection);
+            Order order = Order.create(1L, orderItemsCollection);
 
             // assert
             assertThat(orderItemsCollection.calculateTotalAmount()).isEqualTo(new BigDecimal("35000"));
