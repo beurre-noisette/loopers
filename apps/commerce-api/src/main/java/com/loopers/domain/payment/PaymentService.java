@@ -91,6 +91,11 @@ public class PaymentService {
         return paymentRepository.findByStatusAndProcessedAtBefore(PaymentStatus.PROCESSING, cutoff);
     }
 
+    @Transactional(readOnly = true)
+    public List<Payment> findProcessingPaymentsBetween(ZonedDateTime startTime, ZonedDateTime endTime) {
+        return paymentRepository.findByStatusAndCreatedAtBetween(PaymentStatus.PROCESSING, startTime, endTime);
+    }
+
     private Payment findPaymentByOrderId(Long orderId) {
         return paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, 

@@ -26,4 +26,15 @@ public interface PaymentJpaRepository extends JpaRepository<Payment, Long> {
     );
 
     List<Payment> findByOrderIdAndStatus(Long orderId, PaymentStatus status);
+
+    @Query( "SELECT p " +
+            "FROM Payment p " +
+            "WHERE p.status = :status " +
+            "  AND p.createdAt BETWEEN :startTime AND :endTime " +
+            "ORDER BY p.createdAt ASC")
+    List<Payment> findByStatusAndCreatedAtBetween(
+            @Param("status") PaymentStatus status,
+            @Param("startTime") ZonedDateTime startTime,
+            @Param("endTime") ZonedDateTime endTime
+    );
 }

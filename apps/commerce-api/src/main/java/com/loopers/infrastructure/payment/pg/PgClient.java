@@ -1,12 +1,14 @@
 package com.loopers.infrastructure.payment.pg;
 
+import com.loopers.infrastructure.payment.pg.config.PgClientConfig;
 import com.loopers.interfaces.api.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
 @FeignClient(
         name = "pg-client",
-        url = "${pg.api.url:http://localhost:8082}"
+        url = "${pg.api.url:http://localhost:8082}",
+        configuration = PgClientConfig.class
 )
 public interface PgClient {
 

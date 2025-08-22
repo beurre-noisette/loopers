@@ -17,4 +17,6 @@ public interface PaymentRepository {
     List<Payment> findByStatusAndProcessedAtBefore(PaymentStatus status, ZonedDateTime cutoff);
 
     List<Payment> findByOrderIdAndStatus(Long orderId, PaymentStatus status);
+
+    List<Payment> findByStatusAndCreatedAtBetween(PaymentStatus status, ZonedDateTime startTime, ZonedDateTime endTime);
 }

@@ -49,4 +49,9 @@ public class PaymentRepositoryImpl implements PaymentRepository {
     public List<Payment> findByOrderIdAndStatus(Long orderId, PaymentStatus status) {
         return paymentJpaRepository.findByOrderIdAndStatus(orderId, status);
     }
+
+    @Override
+    public List<Payment> findByStatusAndCreatedAtBetween(PaymentStatus status, ZonedDateTime startTime, ZonedDateTime endTime) {
+        return paymentJpaRepository.findByStatusAndCreatedAtBetween(status, startTime, endTime);
+    }
 }
