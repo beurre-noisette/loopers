@@ -63,7 +63,7 @@ public class PaymentFacade {
                     event.getPaymentDetails()
             );
             
-            User user = userService.findByAccountId(event.getUserId());
+            User user = userService.findByAccountId(event.getAccountId());
             PaymentProcessor paymentProcessor = paymentProcessorFactory.getPaymentProcessor(paymentCommand.getMethod());
             PaymentResult result = paymentProcessor.processPayment(user.getId(), paymentCommand);
             

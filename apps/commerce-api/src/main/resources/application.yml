@@ -68,15 +68,11 @@ resilience4j:
           - java.net.ConnectException                              # 연결 실패 (일시적 네트워크 장애)
           - feign.RetryableException                               # Feign에서 재시도 가능하다고 판단한 예외
           - java.util.concurrent.TimeoutException                  # 타임아웃 예외
+          - feign.FeignException                                   # Feign 관련 예외 (500 에러 포함)
           
         # 재시도하지 않을 예외 지정
         ignore-exceptions:
           - com.loopers.support.error.CoreException                # 비즈니스 로직 예외 (재시도 무의미)
-          - feign.FeignException.BadRequest                        # 400 에러 (요청 자체 문제)
-          - feign.FeignException.Unauthorized                      # 401 에러 (인증 문제)
-          - feign.FeignException.Forbidden                         # 403 에러 (권한 문제)
-          - feign.FeignException.NotFound                          # 404 에러 (리소스 없음)
-
 
 datasource:
   mysql-jpa:

@@ -10,7 +10,6 @@ import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +19,6 @@ import java.math.BigDecimal;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.time.ZonedDateTime;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 @Service("pgPaymentProcessor")
@@ -55,6 +53,8 @@ public class PgPaymentProcessor implements PaymentProcessor {
     }
 
     @Override
+    @CircuitBreaker(name = "pgCircuit", fallbackMethod = "fallbackPayment")
+    @Retry(name = "pgRetry")
     public PaymentResult processPayment(Long userId, PaymentCommand command) {
         log.info("PG 결제 요청 시작 -> userId: {}, orderId: {}, amount: {}", 
             userId, command.getOrderId(), command.getAmount());
@@ -79,8 +79,6 @@ public class PgPaymentProcessor implements PaymentProcessor {
         };
     }
 
-    @CircuitBreaker(name = "pgCircuit", fallbackMethod = "fallbackPayment")
-    @Retry(name = "pgRetry")
     private PaymentResult requestPgPayment(Long userId, CardPaymentCommand cardCommand) {
         try {
             PgPaymentDto.PaymentRequest request = PgPaymentDto.PaymentRequest.of(
@@ -121,15 +119,14 @@ public class PgPaymentProcessor implements PaymentProcessor {
         } catch (Exception e) {
             log.error("PG 결제 요청 중 네트워크 오류 발생 -> userId: {}, orderId: {}",
                     userId, cardCommand.getOrderId(), e);
-            throw new CoreException(ErrorType.INTERNAL_ERROR,
-                "PG 시스템 연결 실패: " + e.getMessage());
+            throw e;
         }
     }
 
 
-    private PaymentResult fallbackPayment(Long userId, CardPaymentCommand cardCommand, Exception exception) {
+    private PaymentResult fallbackPayment(Long userId, PaymentCommand command, Exception exception) {
         log.warn("PG 결제 시스템 장애로 인한 Fallback 처리 -> userId: {}, orderId: {}, errorType: {}, error: {}",
-                userId, cardCommand.getOrderId(), exception.getClass().getSimpleName(), exception.getMessage());
+                userId, command.getOrderId(), exception.getClass().getSimpleName(), exception.getMessage());
 
         PaymentStatus fallbackStatus;
         String fallbackMessage;
@@ -149,7 +146,7 @@ public class PgPaymentProcessor implements PaymentProcessor {
 
         return new PaymentResult(
                 null,
-                cardCommand.getAmount(),
+                command.getAmount(),
                 fallbackStatus,
                 ZonedDateTime.now(),
                 fallbackMessage,

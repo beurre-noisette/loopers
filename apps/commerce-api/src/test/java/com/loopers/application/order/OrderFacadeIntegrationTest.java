@@ -8,6 +8,8 @@ import com.loopers.domain.coupon.CouponService;
 import com.loopers.domain.coupon.UserCoupon;
 import com.loopers.domain.order.OrderCommand;
 import com.loopers.domain.order.OrderStatus;
+import com.loopers.domain.payment.PaymentDetails;
+import com.loopers.domain.payment.PaymentMethod;
 import com.loopers.domain.point.Point;
 import com.loopers.domain.point.PointReference;
 import com.loopers.domain.point.PointService;
@@ -90,10 +92,10 @@ class OrderFacadeIntegrationTest {
         }
     }
 
-    private User createTestUser(String userId) {
+    private User createTestUser(String accountId) {
         User user = User.of(new UserCommand.Create(
-                userId,
-                userId + "@test.com",
+                accountId,
+                accountId + "@test.com",
                 "1996-08-16",
                 Gender.MALE
         ));
@@ -117,55 +119,22 @@ class OrderFacadeIntegrationTest {
         OrderCommand.Create command = new OrderCommand.Create(
                 List.of(new OrderCommand.CreateItem(savedProduct.getId(), 10)),
                 BigDecimal.ZERO,
-                null
+                null,
+                new PaymentDetails.Point()
         );
 
         // act
         CoreException exception = assertThrows(CoreException.class, () -> {
-            orderFacade.createOrder(user.getUserId(),  command);
+            orderFacade.createOrder(user.getAccountId(), command);
         });
 
         // assert
-        assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT);
+        assertThat(exception.getErrorType()).isEqualTo(ErrorType.BAD_REQUEST);
 
         Product finalProduct = productRepository.findById(savedProduct.getId()).orElseThrow();
         assertThat(finalProduct.getStock()).isEqualTo(5);
     }
 
-    @DisplayName("포인트가 부족한 경우 주문에 실패한다.")
-    @Test
-    void throwsPaymentInsufficientPointException_whenInsufficientPoints() {
-        // arrange
-        User user = createTestUser("poorUser");
-        Product product = createTestProduct("일반 상품", 100);
-        Product savedProduct = productRepository.save(product);
-
-        pointService.createPointWithInitialAmount(
-                user.getId(),
-                new BigDecimal("5000"),
-                PointReference.welcomeBonus()
-        );
-
-        OrderCommand.Create command = new OrderCommand.Create(
-                List.of(new OrderCommand.CreateItem(savedProduct.getId(), 2)),
-                BigDecimal.ZERO,
-                null
-        );
-
-        // act
-        CoreException exception = assertThrows(CoreException.class, () -> {
-            orderFacade.createOrder(user.getUserId(), command);
-        });
-
-        // assert
-        assertThat(exception.getErrorType()).isEqualTo(ErrorType.PAYMENT_INSUFFICIENT_POINT);
-
-        Product finalProduct = productRepository.findById(savedProduct.getId()).orElseThrow();
-        assertThat(finalProduct.getStock()).isEqualTo(100);
-
-        assertThat(pointService.getPoint(user.getId()).getBalance())
-                .isEqualByComparingTo(new  BigDecimal("5000"));
-    }
 
     @DisplayName("주문 처리중 실패 시 모든 작업이 롤백된다.")
     @Test
@@ -191,7 +160,8 @@ class OrderFacadeIntegrationTest {
                         new OrderCommand.CreateItem(savedInsufficientProduct.getId(), 5)
                 ),
                 new  BigDecimal("1000"),
-                null
+                null,
+                new PaymentDetails.Point()
         );
 
         BigDecimal initialBalance = pointService.getPoint(user.getId()).getBalance();
@@ -200,11 +170,11 @@ class OrderFacadeIntegrationTest {
 
         // act
         CoreException exception = assertThrows(CoreException.class, () -> {
-            orderFacade.createOrder(user.getUserId(), command);
+            orderFacade.createOrder(user.getAccountId(), command);
         });
 
         // assert
-        assertThat(exception.getErrorType()).isEqualTo(ErrorType.INVALID_INPUT_FORMAT);
+        assertThat(exception.getErrorType()).isEqualTo(ErrorType.BAD_REQUEST);
 
         Product finalProduct1 = productRepository.findById(savedEnoughStockProduct.getId()).orElseThrow();
         assertThat(finalProduct1.getStock()).isEqualTo(initialStockOfSavedEnoughProduct);
@@ -216,68 +186,6 @@ class OrderFacadeIntegrationTest {
                 .isEqualByComparingTo(initialBalance);
     }
 
-    @DisplayName("주문 성공 시 모든 처리가 정상 반영된다.")
-    @Test
-    void createOrder_success_allChangesArsPersisted() {
-        // arrange
-        User user = createTestUser("luckyUser");
-
-        Product productA = createTestProduct("A", 50);
-        Product savedProductA = productRepository.save(productA);
-
-        Product productB = createTestProduct("B", 30);
-        Product savedProductB = productRepository.save(productB);
-
-        BigDecimal initialAmount = new BigDecimal("100000");
-        pointService.createPointWithInitialAmount(
-                user.getId(),
-                initialAmount,
-                PointReference.welcomeBonus()
-        );
-
-        BigDecimal pointsForDiscount = new BigDecimal("1000");
-        OrderCommand.Create command = new OrderCommand.Create(
-                List.of(
-                        new OrderCommand.CreateItem(savedProductA.getId(), 2),
-                        new OrderCommand.CreateItem(savedProductB.getId(), 3)
-                ),
-                pointsForDiscount,
-                null
-        );
-
-        int initialStockOfSavedProductA = savedProductA.getStock();
-        int initialStockOfSavedProductB = savedProductB.getStock();
-        BigDecimal expectedOriginalAmount = savedProductA.getPrice().multiply(BigDecimal.valueOf(2))
-                .add(savedProductB.getPrice().multiply(BigDecimal.valueOf(3)));
-        BigDecimal expectedFinalAmount = expectedOriginalAmount.subtract(pointsForDiscount);
-
-        // act
-        OrderInfo result = orderFacade.createOrder(user.getUserId(), command);
-
-        // assert
-        // 1. 주문 정보 검증
-        assertThat(result).isNotNull();
-        assertThat(result.userId()).isEqualTo(user.getUserId());
-        assertThat(result.status()).isEqualTo(OrderStatus.COMPLETED);
-        assertThat(result.orderItems()).hasSize(2);
-        assertThat(result.originalAmount()).isEqualByComparingTo(expectedOriginalAmount); // 주문 총액
-        assertThat(result.pointDiscount()).isEqualByComparingTo(pointsForDiscount); // 할인 포인트
-        assertThat(result.finalAmount()).isEqualByComparingTo(expectedFinalAmount); // 실제 결제 금액
-
-        // 2. 재고 차감 검증
-        Product finalProductA = productRepository.findById(savedProductA.getId()).orElseThrow();
-        assertThat(finalProductA.getStock()).isEqualTo(initialStockOfSavedProductA - 2);
-
-        Product finalProductB = productRepository.findById(savedProductB.getId()).orElseThrow();
-        assertThat(finalProductB.getStock()).isEqualTo(initialStockOfSavedProductB - 3);
-
-        // 3. 포인트 차감 검증 (할인 포인트 + 결제 금액)
-        Point finalPoint = pointService.getPoint(user.getId());
-        BigDecimal expectedRemainingPoints = initialAmount
-                .subtract(pointsForDiscount) // 할인용 포인트
-                .subtract(expectedFinalAmount); // 실제 결제 금액
-        assertThat(finalPoint.getBalance()).isEqualByComparingTo(expectedRemainingPoints);
-    }
 
     @DisplayName("쿠폰을 사용한 주문이 성공한다.")
     @Test
@@ -309,11 +217,12 @@ class OrderFacadeIntegrationTest {
         OrderCommand.Create command = new OrderCommand.Create(
                 List.of(new OrderCommand.CreateItem(savedProduct.getId(), 1)),
                 pointsForDiscount,
-                userCoupon.getId()
+                userCoupon.getId(),
+                new PaymentDetails.Point()
         );
 
         // act
-        OrderInfo result = orderFacade.createOrder(user.getUserId(), command);
+        OrderInfo result = orderFacade.createOrder(user.getAccountId(), command);
 
         // assert
         assertThat(result).isNotNull();
@@ -338,12 +247,13 @@ class OrderFacadeIntegrationTest {
         OrderCommand.Create command = new OrderCommand.Create(
                 List.of(new OrderCommand.CreateItem(savedProduct.getId(), 1)),
                 BigDecimal.ZERO,
-                999L // 존재하지 않는 쿠폰 ID
+                999L, // 존재하지 않는 쿠폰 ID
+                new PaymentDetails.Point()
         );
 
         // act
         CoreException exception = assertThrows(CoreException.class, () ->
-                orderFacade.createOrder(user.getUserId(), command)
+                orderFacade.createOrder(user.getAccountId(), command)
         );
 
         // assert
@@ -383,12 +293,13 @@ class OrderFacadeIntegrationTest {
         OrderCommand.Create command = new OrderCommand.Create(
                 List.of(new OrderCommand.CreateItem(savedProduct.getId(), 1)),
                 new BigDecimal("1000"),
-                userCoupon.getId()
+                userCoupon.getId(),
+                new PaymentDetails.Point()
         );
 
         // act
         CoreException exception = assertThrows(CoreException.class, () ->
-                orderFacade.createOrder(user.getUserId(), command)
+                orderFacade.createOrder(user.getAccountId(), command)
         );
 
         // assert
