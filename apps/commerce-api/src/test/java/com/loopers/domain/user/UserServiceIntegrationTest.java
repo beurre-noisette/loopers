@@ -40,33 +40,33 @@ class UserServiceIntegrationTest {
         @DisplayName("User 저장이 수행된다.")
         void saveUser_whenUserRegister() {
             // arrange
-            String userId = "testUser";
+            String accountId = "testUser";
             String email = "test@gmail.com";
             String birthDate = "1996-08-16";
             Gender gender = Gender.MALE;
 
-            UserCommand.Create command = new UserCommand.Create(userId, email, birthDate, gender);
+            UserCommand.Create command = new UserCommand.Create(accountId, email, birthDate, gender);
 
             // act
             User savedUser = userService.signUp(command);
 
             // assert
-            assertThat(savedUser.getUserId()).isEqualTo(userId);
+            assertThat(savedUser.getAccountId()).isEqualTo(accountId);
             assertThat(savedUser.getEmail()).isEqualTo(email);
             verify(userRepository).save(any(User.class));
-            verify(userRepository).existsByUserId(userId);
+            verify(userRepository).existsByAccountId(accountId);
         }
 
         @Test
         @DisplayName("이미 존재하는 회원이라면 ALREADY_REGISTERED_USER 예외를 발생한다.")
         void throwAlreadyRegisteredUserException_whenProvidedDuplicateUserId() {
             // arrange
-            String userId = "duplicate";
+            String accountId = "duplicate";
             String email = "test@gmail.com";
             String birthDate = "1996-08-16";
             Gender gender = Gender.MALE;
 
-            UserCommand.Create command = new UserCommand.Create(userId, email, birthDate, gender);
+            UserCommand.Create command = new UserCommand.Create(accountId, email, birthDate, gender);
 
             userService.signUp(command);
 
@@ -87,33 +87,33 @@ class UserServiceIntegrationTest {
         @Test
         void returnUserInfo_whenUserExists() {
             // arrange
-            String userId = "testUser";
-            UserCommand.Create command = new UserCommand.Create(userId, "test@gmail.com", "1996-08-16", Gender.MALE);
+            String accountId = "testUser";
+            UserCommand.Create command = new UserCommand.Create(accountId, "test@gmail.com", "1996-08-16", Gender.MALE);
             User savedUser = userService.signUp(command);
 
             // act
-            User foundUser = userService.findByUserId(userId);
+            User foundUser = userService.findByAccountId(accountId);
 
             // assert
             assertThat(foundUser).isNotNull();
-            assertThat(foundUser.getUserId()).isEqualTo(savedUser.getUserId());
+            assertThat(foundUser.getAccountId()).isEqualTo(savedUser.getAccountId());
             assertThat(foundUser.getEmail()).isEqualTo(savedUser.getEmail());
-            verify(userRepository).findByUserId(userId);
+            verify(userRepository).findByAccountId(accountId);
         }
 
         @DisplayName("해당 ID의 회원이 존재하지 않을 경우, USER_NOT_FOUND 예외를 발생시킨다.")
         @Test
         void throwUserNotFoundException_whenUserDoesNotExist() {
             // arrange
-            String nonExistUserId = "nonExistUserId";
+            String nonExistAccountId = "nonExistAccountId";
 
             // act & assert
             CoreException exception = assertThrows(CoreException.class, () -> {
-                userService.findByUserId(nonExistUserId);
+                userService.findByAccountId(nonExistAccountId);
             });
 
             assertThat(exception.getErrorType()).isEqualTo(ErrorType.USER_NOT_FOUND);
-            verify(userRepository).findByUserId(nonExistUserId);
+            verify(userRepository).findByAccountId(nonExistAccountId);
         }
     }
 

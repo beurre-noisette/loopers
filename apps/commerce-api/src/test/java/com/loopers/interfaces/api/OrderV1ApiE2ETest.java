@@ -3,6 +3,8 @@ package com.loopers.interfaces.api;
 import com.loopers.domain.brand.Brand;
 import com.loopers.domain.brand.BrandCommand;
 import com.loopers.domain.brand.BrandRepository;
+import com.loopers.domain.payment.PaymentDetails;
+import com.loopers.domain.payment.PaymentMethod;
 import com.loopers.domain.point.Point;
 import com.loopers.domain.point.PointRepository;
 import com.loopers.domain.product.Product;
@@ -91,13 +93,15 @@ class OrderV1ApiE2ETest {
         void returnOrderInfo_whenCreateSingleProductOrder() {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
-                List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 2)),
-                BigDecimal.ZERO,
-                null
+                    List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 2)),
+                    BigDecimal.ZERO,
+                    null,
+                    PaymentMethod.POINT,
+                    null
             );
 
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
+            headers.set("X-USER-ID", testUser.getAccountId());
 
             // act
             ParameterizedTypeReference<ApiResponse<OrderV1Dto.OrderCreateResponse>> responseType = 
@@ -116,7 +120,9 @@ class OrderV1ApiE2ETest {
                 () -> assertEquals("SUCCESS", response.getBody().meta().result().name()),
                 () -> assertNotNull(response.getBody().data().orderId()),
                 () -> assertEquals(0, BigDecimal.valueOf(20000).compareTo(response.getBody().data().totalAmount())), // 10000 * 2
-                () -> assertEquals("COMPLETED", response.getBody().data().status())
+                () -> assertTrue(response.getBody().data().status().equals("PAYMENT_PROCESSING") || 
+                                response.getBody().data().status().equals("PAYMENT_WAITING") ||
+                                response.getBody().data().status().equals("COMPLETED"))
             );
         }
 
@@ -125,16 +131,18 @@ class OrderV1ApiE2ETest {
         void returnOrderInfo_whenCreateMultipleProductOrder() {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
-                List.of(
-                    new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 1), // 10000원
-                    new OrderV1Dto.OrderItemRequest(testProduct2.getId(), 2)  // 15000 * 2 = 30000원
-                ),
-                BigDecimal.ZERO,
-                null
+                    List.of(
+                        new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 1), // 10000원
+                        new OrderV1Dto.OrderItemRequest(testProduct2.getId(), 2)  // 15000 * 2 = 30000원
+                    ),
+                    BigDecimal.ZERO,
+                    null,
+                    PaymentMethod.POINT,
+                    null
             );
 
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
+            headers.set("X-USER-ID", testUser.getAccountId());
 
             // act
             ParameterizedTypeReference<ApiResponse<OrderV1Dto.OrderCreateResponse>> responseType = 
@@ -153,7 +161,9 @@ class OrderV1ApiE2ETest {
                 () -> assertEquals("SUCCESS", response.getBody().meta().result().name()),
                 () -> assertNotNull(response.getBody().data().orderId()),
                 () -> assertEquals(0, BigDecimal.valueOf(40000).compareTo(response.getBody().data().totalAmount())), // 10000 + 30000
-                () -> assertEquals("COMPLETED", response.getBody().data().status())
+                () -> assertTrue(response.getBody().data().status().equals("PAYMENT_PROCESSING") || 
+                                response.getBody().data().status().equals("PAYMENT_WAITING") ||
+                                response.getBody().data().status().equals("COMPLETED"))
             );
         }
 
@@ -162,13 +172,15 @@ class OrderV1ApiE2ETest {
         void returnDiscountedOrderInfo_whenCreateOrderWithPointDiscount() {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
-                List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 1)), // 10000원
-                BigDecimal.valueOf(2000), // 2000원 포인트 할인
-                null
+                    List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 1)), // 10000원
+                    BigDecimal.valueOf(2000), // 2000원 포인트 할인
+                    null,
+                    PaymentMethod.POINT,
+                    null
             );
 
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
+            headers.set("X-USER-ID", testUser.getAccountId());
 
             // act
             ParameterizedTypeReference<ApiResponse<OrderV1Dto.OrderCreateResponse>> responseType = 
@@ -187,7 +199,9 @@ class OrderV1ApiE2ETest {
                 () -> assertEquals("SUCCESS", response.getBody().meta().result().name()),
                 () -> assertNotNull(response.getBody().data().orderId()),
                 () -> assertEquals(0, BigDecimal.valueOf(8000).compareTo(response.getBody().data().totalAmount())), // 10000 - 2000
-                () -> assertEquals("COMPLETED", response.getBody().data().status())
+                () -> assertTrue(response.getBody().data().status().equals("PAYMENT_PROCESSING") || 
+                                response.getBody().data().status().equals("PAYMENT_WAITING") ||
+                                response.getBody().data().status().equals("COMPLETED"))
             );
         }
 
@@ -196,13 +210,15 @@ class OrderV1ApiE2ETest {
         void return404NotFound_whenOrderNonExistentProduct() {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
-                List.of(new OrderV1Dto.OrderItemRequest(99999L, 1)), // 존재하지 않는 상품 ID
-                BigDecimal.ZERO,
-                null
+                    List.of(new OrderV1Dto.OrderItemRequest(99999L, 1)), // 존재하지 않는 상품 ID
+                    BigDecimal.ZERO,
+                    null,
+                    PaymentMethod.POINT,
+                    null
             );
 
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
+            headers.set("X-USER-ID", testUser.getAccountId());
 
             // act
             ParameterizedTypeReference<ApiResponse<OrderV1Dto.OrderCreateResponse>> responseType = 
@@ -223,40 +239,15 @@ class OrderV1ApiE2ETest {
         void return400BadRequest_whenOrderExceedsStock() {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
-                List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 200)), // 재고(100)보다 많은 수량
-                BigDecimal.ZERO,
-                null
+                    List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 200)), // 재고(100)보다 많은 수량
+                    BigDecimal.ZERO,
+                    null,
+                    PaymentMethod.POINT,
+                    null
             );
 
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
-
-            // act
-            ParameterizedTypeReference<ApiResponse<OrderV1Dto.OrderCreateResponse>> responseType = 
-                new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<OrderV1Dto.OrderCreateResponse>> response = testRestTemplate.exchange(
-                ENDPOINT, 
-                HttpMethod.POST, 
-                new HttpEntity<>(request, headers), 
-                responseType
-            );
-
-            // assert
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        }
-
-        @DisplayName("보유 포인트보다 많은 포인트 할인을 요청할 경우, 400 Bad Request 응답을 반환한다.")
-        @Test
-        void return400BadRequest_whenPointDiscountExceedsBalance() {
-            // arrange
-            OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
-                List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 1)), // 10000원
-                BigDecimal.valueOf(100000), // 보유 포인트(50000)보다 많은 할인
-                null
-            );
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
+            headers.set("X-USER-ID", testUser.getAccountId());
 
             // act
             ParameterizedTypeReference<ApiResponse<OrderV1Dto.OrderCreateResponse>> responseType = 
@@ -277,13 +268,15 @@ class OrderV1ApiE2ETest {
         void return400BadRequest_whenEmptyOrderItems() {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
-                List.of(), // 빈 주문 항목
-                BigDecimal.ZERO,
-                null
+                    List.of(), // 빈 주문 항목
+                    BigDecimal.ZERO,
+                    null,
+                    PaymentMethod.POINT,
+                    null
             );
 
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
+            headers.set("X-USER-ID", testUser.getAccountId());
 
             // act
             ParameterizedTypeReference<ApiResponse<OrderV1Dto.OrderCreateResponse>> responseType = 

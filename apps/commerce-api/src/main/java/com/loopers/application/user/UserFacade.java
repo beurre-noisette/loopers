@@ -33,21 +33,21 @@ public class UserFacade {
         return UserInfo.from(user);
     }
 
-    public UserInfo getMyInfo(String userId) {
-        User user = userService.findByUserId(userId);
+    public UserInfo getMyInfo(String accountId) {
+        User user = userService.findByAccountId(accountId);
 
         return UserInfo.from(user);
     }
 
-    public UserPointInfo getMyPoint(String userId) {
-        User user = userService.findByUserId(userId);
+    public UserPointInfo getMyPoint(String accountId) {
+        User user = userService.findByAccountId(accountId);
         Point point = pointService.getPoint(user.getId());
 
         return UserPointInfo.from(user, point);
     }
 
-    public UserPointInfo chargePoint(String userId, int amount) {
-        User user  = userService.findByUserId(userId);
+    public UserPointInfo chargePoint(String accountId, int amount) {
+        User user  = userService.findByAccountId(accountId);
         pointService.chargePoint(user.getId(), BigDecimal.valueOf(amount), PointReference.userCharge());
         Point point = pointService.getPoint(user.getId());
 

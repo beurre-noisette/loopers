@@ -9,5 +9,5 @@ public interface OrderRepository {
 
     Optional<Order> findById(Long id);
 
-    List<Order> findByUserId(String userId);
+    List<Order> findByUserId(Long userId);
 }

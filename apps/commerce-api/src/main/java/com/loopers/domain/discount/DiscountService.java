@@ -2,6 +2,8 @@ package com.loopers.domain.discount;
 
 import com.loopers.domain.coupon.CouponService;
 import com.loopers.domain.order.Order;
+import com.loopers.domain.point.PointService;
+import com.loopers.domain.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,27 +13,33 @@ import java.math.BigDecimal;
 public class DiscountService {
 
     private final CouponService couponService;
+    private final PointService pointService;
 
     @Autowired
-    public DiscountService(CouponService couponService) {
+    public DiscountService(CouponService couponService, PointService pointService) {
         this.couponService = couponService;
+        this.pointService = pointService;
     }
 
-    public DiscountResult calculateDiscount(Order order, BigDecimal pointToUse, Long userCouponId) {
+    public DiscountResult calculateDiscount(User user, Order order, BigDecimal pointToUse, Long userCouponId) {
         BigDecimal totalAmount = order.getTotalAmount();
         
-        BigDecimal pointDiscount = calculatePointDiscount(totalAmount, pointToUse);
+        BigDecimal pointDiscount = calculateAndApplyPointDiscount(user, totalAmount, pointToUse, order.getId());
         BigDecimal couponDiscount = calculateCouponDiscount(userCouponId, order.getId(), totalAmount);
 
         return DiscountResult.of(pointDiscount, couponDiscount);
     }
 
-    private BigDecimal calculatePointDiscount(BigDecimal totalAmount, BigDecimal pointToUse) {
+    private BigDecimal calculateAndApplyPointDiscount(User user, BigDecimal totalAmount, BigDecimal pointToUse, Long orderId) {
         if (pointToUse == null || pointToUse.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
         }
 
-        return pointToUse.min(totalAmount);
+        BigDecimal actualPointDiscount = pointToUse.min(totalAmount);
+
+        pointService.usePointForDiscount(user.getId(), actualPointDiscount, orderId);
+
+        return actualPointDiscount;
     }
 
     private BigDecimal calculateCouponDiscount(Long userCouponId, Long orderId, BigDecimal orderAmount) {
@@ -40,5 +48,18 @@ public class DiscountService {
         }
 
         return couponService.useCouponAndCalculateDiscount(userCouponId, orderId, orderAmount);
+    }
+
+    public void rollbackDiscount(Long orderId) {
+        rollbackPointDiscount(orderId);
+        rollbackCouponDiscount(orderId);
+    }
+
+    private void rollbackPointDiscount(Long orderId) {
+        pointService.refundOrderDiscount(orderId);
+    }
+
+    private void rollbackCouponDiscount(Long orderId) {
+        couponService.rollbackCouponUsage(orderId);
     }
 }

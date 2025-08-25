@@ -19,18 +19,18 @@ public class PointV1Controller implements PointV1ApiSpec {
     }
 
     @GetMapping("")
-    public ApiResponse<PointV1Dto.PointResponse> getMyPoint(@RequestHeader("X-USER-ID") String userId) {
-        UserPointInfo userPointInfo = userFacade.getMyPoint(userId);
+    public ApiResponse<PointV1Dto.PointResponse> getMyPoint(@RequestHeader("X-USER-ID") String accountId) {
+        UserPointInfo userPointInfo = userFacade.getMyPoint(accountId);
 
         return ApiResponse.success(PointV1Dto.PointResponse.from(userPointInfo));
     }
 
     @PostMapping("")
     public ApiResponse<PointV1Dto.PointResponse> chargePoints(
-            @RequestHeader("X-USER-ID") String userId,
+            @RequestHeader("X-USER-ID") String accountId,
             @RequestBody UserV1Dto.UserPointChargeRequest request)
     {
-        UserPointInfo userPointInfo = userFacade.chargePoint(userId, request.amount());
+        UserPointInfo userPointInfo = userFacade.chargePoint(accountId, request.amount());
 
         return ApiResponse.success(PointV1Dto.PointResponse.from(userPointInfo));
     }

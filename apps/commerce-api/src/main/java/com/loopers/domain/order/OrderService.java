@@ -20,7 +20,7 @@ public class OrderService {
 
 
     @Transactional
-    public Order createOrder(String userId, OrderItems orderItems) {
+    public Order createOrder(Long userId, OrderItems orderItems) {
         Order order = Order.create(userId, orderItems);
         return orderRepository.save(order);
     }
@@ -33,7 +33,7 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<Order> findByUserId(String userId) {
+    public List<Order> findByUserId(Long userId) {
         return orderRepository.findByUserId(userId);
     }
 }

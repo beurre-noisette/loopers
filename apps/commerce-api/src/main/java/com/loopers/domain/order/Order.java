@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 public class Order extends BaseEntity {
 
     @Column(nullable = false)
-    private String userId;
+    private Long userId;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
@@ -26,43 +26,66 @@ public class Order extends BaseEntity {
     @Convert(converter = OrderItemsConverter.class)
     private OrderItems orderItems;
 
+    @Column
+    private String cancelReason;
+
     protected Order() {}
 
-    private Order(String userId, OrderItems orderItems) {
+    private Order(Long userId, OrderItems orderItems) {
         this.userId = userId;
         this.orderItems = orderItems;
         this.totalAmount = orderItems.calculateTotalAmount();
         this.status = OrderStatus.PENDING;
     }
 
-    public static Order create(String userId, OrderItems orderItems) {
+    public static Order create(Long userId, OrderItems orderItems) {
         validateUserId(userId);
         return new Order(userId, orderItems);
     }
 
-    public OrderItems getOrderItems() {
-        return this.orderItems;
-    }
-
-    public void complete() {
-        if (this.status != OrderStatus.PENDING) {
-            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "대기 중인 주문만 완료할 수 있습니다.");
-        }
-
-        this.status = OrderStatus.COMPLETED;
-    }
-
-    public void cancel() {
+    public void cancel(String reason) {
         if (this.status == OrderStatus.COMPLETED) {
             throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "완료된 주문은 취소할 수 없습니다.");
         }
 
         this.status = OrderStatus.CANCELLED;
+        this.cancelReason = reason;
     }
 
+    public void waitForPayment() {
+        if (this.status != OrderStatus.PENDING) {
+            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "대기 중인 주문만 결제 대기 상태로 변경할 수 있습니다.");
+        }
 
-    private static void validateUserId(String userId) {
-        if (userId == null || userId.isBlank()) {
+        this.status = OrderStatus.PAYMENT_WAITING;
+    }
+
+    public void processingPayment() {
+        if (this.status != OrderStatus.PAYMENT_WAITING) {
+            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "결제 대기 중인 주문만 처리 중 상태로 변경할 수 있습니다.");
+        }
+
+        this.status = OrderStatus.PAYMENT_PROCESSING;
+    }
+
+    public void completePayment() {
+        if (this.status != OrderStatus.PAYMENT_WAITING && this.status != OrderStatus.PAYMENT_PROCESSING) {
+            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "결제 대기/처리 중인 주문만 완료할 수 있습니다.");
+        }
+
+        this.status = OrderStatus.COMPLETED;
+    }
+
+    public boolean isPaymentWaiting() {
+        return this.status == OrderStatus.PAYMENT_WAITING;
+    }
+
+    public boolean isCompleted() {
+        return this.status == OrderStatus.COMPLETED;
+    }
+
+    private static void validateUserId(Long userId) {
+        if (userId == null || userId <= 0) {
             throw new CoreException(ErrorType.BAD_REQUEST, "사용자 ID는 필수값입니다.");
         }
     }

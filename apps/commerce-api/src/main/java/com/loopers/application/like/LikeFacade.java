@@ -32,7 +32,7 @@ public class LikeFacade {
 
     @Transactional
     public void createLike(LikeCommand.Create command) {
-        User user = userService.findByUserId(command.userId());
+        User user = userService.findByAccountId(command.accountId());
 
         Target target = createTarget(command.targetType(), command.targetId());
 
@@ -47,7 +47,7 @@ public class LikeFacade {
 
     @Transactional
     public void cancelLike(LikeCommand.Create command) {
-        User user = userService.findByUserId(command.userId());
+        User user = userService.findByAccountId(command.accountId());
 
         Target target = createTarget(command.targetType(), command.targetId());
 

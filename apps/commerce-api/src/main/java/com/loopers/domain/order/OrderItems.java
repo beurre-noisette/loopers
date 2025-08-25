@@ -43,6 +43,13 @@ public class OrderItems {
         return items.size();
     }
 
+    public void validateStockAvailability(List<Product> products) {
+        this.items.forEach(orderItem -> {
+            Product product = Product.findById(products, orderItem.productId());
+            product.validateStockAvailability(orderItem.quantity());
+        });
+    }
+
     public static OrderItems create(List<OrderCommand.CreateItem> commandItems, List<Product> products) {
         Map<Long, Product> productMap = products.stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));

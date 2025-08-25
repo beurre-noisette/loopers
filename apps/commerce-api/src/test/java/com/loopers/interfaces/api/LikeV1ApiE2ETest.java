@@ -80,7 +80,7 @@ class LikeV1ApiE2ETest {
         void returnSuccess_whenCreateLike() {
             // arrange
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
+            headers.set("X-USER-ID", testUser.getAccountId());
             String endpoint = LIKE_ENDPOINT + "/products/" + testProduct.getId();
 
             // act
@@ -105,7 +105,7 @@ class LikeV1ApiE2ETest {
         void return404NotFound_whenProductNotExists() {
             // arrange
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
+            headers.set("X-USER-ID", testUser.getAccountId());
             String endpoint = LIKE_ENDPOINT + "/products/99999"; // 존재하지 않는 상품 ID
 
             // act
@@ -130,7 +130,7 @@ class LikeV1ApiE2ETest {
         void returnSuccess_whenCancelLike() {
             // arrange
             HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getUserId());
+            headers.set("X-USER-ID", testUser.getAccountId());
             String endpoint = LIKE_ENDPOINT + "/products/" + testProduct.getId();
             
             testRestTemplate.exchange(

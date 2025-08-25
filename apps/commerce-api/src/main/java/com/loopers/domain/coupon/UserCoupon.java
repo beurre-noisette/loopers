@@ -70,6 +70,16 @@ public class UserCoupon extends BaseEntity {
         return !used && coupon.isValidPeriod();
     }
 
+    public void rollback() {
+        if (!this.used) {
+            return;
+        }
+        
+        this.used = false;
+        this.usedAt = null;
+        this.orderId = null;
+    }
+
     @Override
     protected void guard() {
         if (userId == null || userId <= 0) {

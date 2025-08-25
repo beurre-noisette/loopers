@@ -53,14 +53,14 @@ class LikeFacadeTest {
             LikeCommand.Create command = new LikeCommand.Create(userId, TargetType.PRODUCT, productId);
 
             User user = createTestUser();
-            when(userService.findByUserId(userId)).thenReturn(user);
+            when(userService.findByAccountId(userId)).thenReturn(user);
             when(likeService.createLike(eq(user), any(ProductTarget.class))).thenReturn(true);
 
             // act
             likeFacade.createLike(command);
 
             // assert
-            verify(userService).findByUserId(userId);
+            verify(userService).findByAccountId(userId);
             verify(likeService).createLike(eq(user), any(ProductTarget.class));
             verify(productService).increaseLikeCount(command.targetId());
         }
@@ -74,7 +74,7 @@ class LikeFacadeTest {
             LikeCommand.Create command = new LikeCommand.Create(userId, TargetType.PRODUCT, productId);
 
             User user = createTestUser();
-            when(userService.findByUserId(userId)).thenReturn(user);
+            when(userService.findByAccountId(userId)).thenReturn(user);
 
             // act
             likeFacade.createLike(command);
@@ -101,14 +101,14 @@ class LikeFacadeTest {
             LikeCommand.Create command = new LikeCommand.Create(userId, TargetType.PRODUCT, productId);
 
             User user = createTestUser();
-            when(userService.findByUserId(userId)).thenReturn(user);
+            when(userService.findByAccountId(userId)).thenReturn(user);
             when(likeService.cancelLike(eq(user), any(ProductTarget.class))).thenReturn(true);
 
             // act
             likeFacade.cancelLike(command);
 
             // assert
-            verify(userService).findByUserId(userId);
+            verify(userService).findByAccountId(userId);
             verify(likeService).cancelLike(eq(user), any(ProductTarget.class));
             verify(productService).decreaseLikeCount(command.targetId());
         }

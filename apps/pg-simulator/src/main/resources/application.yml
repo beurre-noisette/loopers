@@ -1,4 +1,5 @@
 server:
+  port: 8082
   shutdown: graceful
   tomcat:
     threads:
@@ -9,6 +10,10 @@ server:
     accept-count: 100 # 대기 큐 크기 (default : 100)
     keep-alive-timeout: 60s # 60s
   max-http-request-header-size: 8KB
+
+management:
+  server:
+    port: 8083
 
 spring:
   main:
@@ -24,54 +29,55 @@ spring:
       - logging.yml
       - monitoring.yml
 
-datasource:
-  mysql-jpa:
-    main:
-      jdbc-url: jdbc:mysql://localhost:3306/paymentgateway
-
 springdoc:
   use-fqn: true
   swagger-ui:
     path: /swagger-ui.html
 
+datasource:
+  mysql-jpa:
+    main:
+      jdbc-url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/paymentgateway
+      username: ${MYSQL_USER:paymentuser}
+      password: "${MYSQL_PWD:paymentuser}"
+  redis:
+    database: 0
+    master:
+      host: ${REDIS_MASTER_HOST:localhost}
+      port: ${REDIS_MASTER_PORT:6379}
+    replicas:
+      - host: ${REDIS_REPLICA_HOST:localhost}
+        port: ${REDIS_REPLICA_PORT:6380}
 ---
-spring:
-  config:
-    activate:
-      on-profile: local, test
-
-server:
-  port: 8082
-
-management:
-  server:
-    port: 8083
-
----
-spring:
-  config:
-    activate:
-      on-profile: dev
-
-server:
-  port: 8082
-
-management:
-  server:
-    port: 8083
+spring.config.activate.on-profile: local, test
 
 ---
-spring:
-  config:
-    activate:
-      on-profile: qa
+spring.config.activate.on-profile: dev
 
 ---
-spring:
-  config:
-    activate:
-      on-profile: prd
+spring.config.activate.on-profile: qa
+
+---
+spring.config.activate.on-profile: prd
 
 springdoc:
   api-docs:
     enabled: false
+
+---
+spring.config.activate.on-profile: docker
+
+datasource:
+  mysql-jpa:
+    main:
+      jdbc-url: jdbc:mysql://mysql:3306/paymentgateway
+      username: paymentuser
+      password: paymentuser
+
+  redis:
+    master:
+      host: redis-master
+      port: 6379
+    replicas:
+      - host: redis-readonly
+        port: 6379

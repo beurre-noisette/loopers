@@ -18,7 +18,7 @@ VALUES
     (6, '아디다스 슈퍼스타', '레트로 스니커즈', 100000, 90, 2, 0, '2024-01-06 10:00:00', NOW());
 
 -- 사용자 테스트 데이터
-INSERT INTO member (id, user_id, email, birth_date, gender, created_at, updated_at)
+INSERT INTO member (id, account_id, email, birth_date, gender, created_at, updated_at)
 VALUES 
     (1, 'user1', 'user1@example.com', '1990-01-01', 'MALE', NOW(), NOW()),
     (2, 'user2', 'user2@example.com', '1995-05-05', 'FEMALE', NOW(), NOW()),

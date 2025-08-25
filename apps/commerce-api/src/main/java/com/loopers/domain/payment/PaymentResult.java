@@ -2,17 +2,24 @@ package com.loopers.domain.payment;
 
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 public record PaymentResult(
         Long paymentId,
         BigDecimal amount,
         PaymentStatus status,
-        LocalDateTime processedAt,
-        String message
+        ZonedDateTime processedAt,
+        String message,
+        String transactionKey
 ) {
-    public static PaymentResult success(Long paymentId, BigDecimal amount) {
-        return new PaymentResult(paymentId, amount, PaymentStatus.SUCCESS,
-                LocalDateTime.now(), "결제 성공");
+    public static PaymentResult success(Long paymentId, BigDecimal amount, String transactionKey) {
+        return new PaymentResult(
+                paymentId,
+                amount,
+                PaymentStatus.SUCCESS,
+                ZonedDateTime.now(),
+                "결제 성공",
+                transactionKey
+        );
     }
 }

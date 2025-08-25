@@ -16,7 +16,7 @@ import java.time.format.DateTimeParseException;
 public class User extends BaseEntity {
 
     @Column(unique = true, nullable = false)
-    private String userId;
+    private String accountId;
 
     @Column(unique = true, nullable = false)
     private String email;
@@ -30,28 +30,28 @@ public class User extends BaseEntity {
     protected User() {
     }
 
-    private User(String userId, String email, LocalDate birthDate, Gender gender) {
-        this.userId = userId;
+    private User(String accountId, String email, LocalDate birthDate, Gender gender) {
+        this.accountId = accountId;
         this.email = email;
         this.birthDate = birthDate;
         this.gender = gender;
     }
 
     public static User of(UserCommand.Create command) {
-        validateUserId(command.userId());
+        validateAccountId(command.accountId());
         validateEmail(command.email());
         validateGender(command.gender());
 
-        return new User(command.userId(), command.email(), validateAndParseBirthDate(command.birthDate()), command.gender());
+        return new User(command.accountId(), command.email(), validateAndParseBirthDate(command.birthDate()), command.gender());
     }
 
-    private static void validateUserId(String userId) {
-        if (userId == null || userId.isBlank()) {
-            throw new CoreException(ErrorType.BAD_REQUEST, "userId는 비어있을 수 없습니다.");
+    private static void validateAccountId(String accountId) {
+        if (accountId == null || accountId.isBlank()) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "accountId는 비어있을 수 없습니다.");
         }
 
-        if (!userId.matches("^[a-zA-Z0-9]{1,10}$")) {
-            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "10자를 초과하는 userId는 생성할 수 없습니다.");
+        if (!accountId.matches("^[a-zA-Z0-9]{1,10}$")) {
+            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "10자를 초과하는 accountId는 생성할 수 없습니다.");
         }
     }
 

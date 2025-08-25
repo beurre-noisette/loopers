@@ -29,7 +29,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public List<Order> findByUserId(String userId) {
+    public List<Order> findByUserId(Long userId) {
         return orderJpaRepository.findByUserId(userId);
     }
 }

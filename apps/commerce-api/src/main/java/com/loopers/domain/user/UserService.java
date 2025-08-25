@@ -18,8 +18,8 @@ public class UserService {
 
     @Transactional
     public User signUp(UserCommand.Create command) {
-        if (userRepository.existsByUserId(command.userId())) {
-            throw new CoreException(ErrorType.ALREADY_REGISTERED_USER, command.userId());
+        if (userRepository.existsByAccountId(command.accountId())) {
+            throw new CoreException(ErrorType.ALREADY_REGISTERED_USER, command.accountId());
         }
         
         User user = User.of(command);
@@ -28,9 +28,9 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public User findByUserId(String userId) {
-        return userRepository.findByUserId(userId).orElseThrow(
-                () -> new CoreException(ErrorType.USER_NOT_FOUND, userId)
+    public User findByAccountId(String accountId) {
+        return userRepository.findByAccountId(accountId).orElseThrow(
+                () -> new CoreException(ErrorType.USER_NOT_FOUND, accountId)
         );
     }
 }
