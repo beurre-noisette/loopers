@@ -94,7 +94,6 @@ class OrderV1ApiE2ETest {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
                     List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 2)),
-                    BigDecimal.ZERO,
                     null,
                     PaymentMethod.POINT,
                     null
@@ -135,7 +134,6 @@ class OrderV1ApiE2ETest {
                         new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 1), // 10000원
                         new OrderV1Dto.OrderItemRequest(testProduct2.getId(), 2)  // 15000 * 2 = 30000원
                     ),
-                    BigDecimal.ZERO,
                     null,
                     PaymentMethod.POINT,
                     null
@@ -167,51 +165,12 @@ class OrderV1ApiE2ETest {
             );
         }
 
-        @DisplayName("포인트 할인을 사용한 주문에 성공할 경우, 할인이 적용된 금액을 반환한다.")
-        @Test
-        void returnDiscountedOrderInfo_whenCreateOrderWithPointDiscount() {
-            // arrange
-            OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
-                    List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 1)), // 10000원
-                    BigDecimal.valueOf(2000), // 2000원 포인트 할인
-                    null,
-                    PaymentMethod.POINT,
-                    null
-            );
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("X-USER-ID", testUser.getAccountId());
-
-            // act
-            ParameterizedTypeReference<ApiResponse<OrderV1Dto.OrderCreateResponse>> responseType = 
-                new ParameterizedTypeReference<>() {};
-            ResponseEntity<ApiResponse<OrderV1Dto.OrderCreateResponse>> response = testRestTemplate.exchange(
-                ENDPOINT, 
-                HttpMethod.POST, 
-                new HttpEntity<>(request, headers), 
-                responseType
-            );
-
-            // assert
-            assertAll(
-                () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
-                () -> assertNotNull(response.getBody()),
-                () -> assertEquals("SUCCESS", response.getBody().meta().result().name()),
-                () -> assertNotNull(response.getBody().data().orderId()),
-                () -> assertEquals(0, BigDecimal.valueOf(8000).compareTo(response.getBody().data().totalAmount())), // 10000 - 2000
-                () -> assertTrue(response.getBody().data().status().equals("PAYMENT_PROCESSING") || 
-                                response.getBody().data().status().equals("PAYMENT_WAITING") ||
-                                response.getBody().data().status().equals("COMPLETED"))
-            );
-        }
-
         @DisplayName("존재하지 않는 상품을 주문할 경우, 404 Not Found 응답을 반환한다.")
         @Test
         void return404NotFound_whenOrderNonExistentProduct() {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
                     List.of(new OrderV1Dto.OrderItemRequest(99999L, 1)), // 존재하지 않는 상품 ID
-                    BigDecimal.ZERO,
                     null,
                     PaymentMethod.POINT,
                     null
@@ -240,7 +199,6 @@ class OrderV1ApiE2ETest {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
                     List.of(new OrderV1Dto.OrderItemRequest(testProduct1.getId(), 200)), // 재고(100)보다 많은 수량
-                    BigDecimal.ZERO,
                     null,
                     PaymentMethod.POINT,
                     null
@@ -269,7 +227,6 @@ class OrderV1ApiE2ETest {
             // arrange
             OrderV1Dto.OrderCreateRequest request = new OrderV1Dto.OrderCreateRequest(
                     List.of(), // 빈 주문 항목
-                    BigDecimal.ZERO,
                     null,
                     PaymentMethod.POINT,
                     null

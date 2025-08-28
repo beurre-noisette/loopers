@@ -52,22 +52,22 @@ class PaymentStatusCheckSchedulerTest extends CommerceApiContextTest {
         databaseCleanUp.truncateAllTables();
     }
 
-    @DisplayName("PROCESSING 상태의 결제가 있으면 PG 상태를 확인한다")
+    @DisplayName("PENDING 상태의 결제가 있으면 PG 상태를 확인한다")
     @Test
-    void checkProcessingPayments_callsPgWhenProcessingPaymentsExist() {
+    void checkPendingPayments_callsPgWhenPendingPaymentsExist() {
         // arrange
         Long orderId = 12345L;
         
-        Payment processingPayment = Payment.create(
+        Payment pendingPayment = Payment.create(
                 orderId,
                 PaymentMethod.CARD,
                 new BigDecimal("10000"),
                 "20250822:TR:test123",
-                PaymentStatus.PROCESSING
+                PaymentStatus.PENDING
         );
 
-        when(paymentService.findProcessingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
-                .thenReturn(List.of(processingPayment));
+        when(paymentService.findPendingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
+                .thenReturn(List.of(pendingPayment));
 
         PgPaymentDto.TransactionDetailResponse pgResponse =
                 new PgPaymentDto.TransactionDetailResponse(
@@ -83,74 +83,74 @@ class PaymentStatusCheckSchedulerTest extends CommerceApiContextTest {
         ApiResponse<PgPaymentDto.TransactionDetailResponse> apiResponse = 
                 new ApiResponse<>(ApiResponse.Metadata.success(), pgResponse);
 
-        when(pgClient.getTransactionByOrderId(anyString(), anyString()))
+        when(pgClient.getTransaction(anyString(), anyString()))
                 .thenReturn(apiResponse);
 
         // act
-        paymentStatusCheckScheduler.checkProcessingPayments();
+        paymentStatusCheckScheduler.checkPendingPayments();
 
         // assert
-        verify(pgClient, times(1)).getTransactionByOrderId("looCommerce", "12345");
+        verify(pgClient, times(1)).getTransaction("looCommerce", "20250822:TR:test123");
     }
 
-    @DisplayName("PROCESSING 상태의 결제가 없으면 PG를 호출하지 않는다")
+    @DisplayName("PENDING 상태의 결제가 없으면 PG를 호출하지 않는다")
     @Test
-    void checkProcessingPayments_ignoresWhenNoProcessingPayments() {
+    void checkPendingPayments_ignoresWhenNoPendingPayments() {
         // arrange
-        when(paymentService.findProcessingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
+        when(paymentService.findPendingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
                 .thenReturn(List.of());
 
         // act
-        paymentStatusCheckScheduler.checkProcessingPayments();
+        paymentStatusCheckScheduler.checkPendingPayments();
 
         // assert
-        verify(pgClient, never()).getTransactionByOrderId(anyString(), anyString());
+        verify(pgClient, never()).getTransaction(anyString(), anyString());
     }
 
     @DisplayName("PG 호출 실패 시에도 스케줄러는 예외 없이 완료된다")
     @Test
-    void checkProcessingPayments_handlesExceptionsGracefully() {
+    void checkPendingPayments_handlesExceptionsGracefully() {
         // arrange
         Long orderId = 12345L;
         
-        Payment processingPayment = Payment.create(
+        Payment pendingPayment = Payment.create(
                 orderId,
                 PaymentMethod.CARD,
                 new BigDecimal("10000"),
                 "20250822:TR:test123",
-                PaymentStatus.PROCESSING
+                PaymentStatus.PENDING
         );
 
-        when(paymentService.findProcessingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
-                .thenReturn(List.of(processingPayment));
+        when(paymentService.findPendingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
+                .thenReturn(List.of(pendingPayment));
 
-        when(pgClient.getTransactionByOrderId(anyString(), anyString()))
+        when(pgClient.getTransaction(anyString(), anyString()))
                 .thenThrow(new RuntimeException("PG 서버 연결 실패"));
 
         // act & assert
         assertAll(
-                () -> paymentStatusCheckScheduler.checkProcessingPayments(),
-                () -> verify(pgClient, times(1)).getTransactionByOrderId("looCommerce", "12345")
+                () -> paymentStatusCheckScheduler.checkPendingPayments(),
+                () -> verify(pgClient, times(1)).getTransaction("looCommerce", "20250822:TR:test123")
         );
     }
 
 
-    @DisplayName("여러개의 PROCESSING 결제가 있으면 모두 확인한다")
+    @DisplayName("여러개의 Pending 결제가 있으면 모두 확인한다")
     @Test
-    void checkProcessingPayments_checksAllProcessingPayments() {
+    void checkPendingPayments_checksAllPendingPayments() {
         // arrange
         
         Payment payment1 = Payment.create(
                 100L, PaymentMethod.CARD, new BigDecimal("10000"),
-                "20250822:TR:test1", PaymentStatus.PROCESSING
+                "20250822:TR:test1", PaymentStatus.PENDING
         );
         
         Payment payment2 = Payment.create(
                 200L, PaymentMethod.CARD, new BigDecimal("20000"),
-                "20250822:TR:test2", PaymentStatus.PROCESSING
+                "20250822:TR:test2", PaymentStatus.PENDING
         );
 
-        when(paymentService.findProcessingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
+        when(paymentService.findPendingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
                 .thenReturn(List.of(payment1, payment2));
 
         PgPaymentDto.TransactionDetailResponse pgResponse1 =
@@ -167,39 +167,39 @@ class PaymentStatusCheckSchedulerTest extends CommerceApiContextTest {
                         PgPaymentDto.TransactionStatus.FAILED, "결제 실패"
                 );
 
-        when(pgClient.getTransactionByOrderId("looCommerce", "100"))
+        when(pgClient.getTransaction("looCommerce", "20250822:TR:test1"))
                 .thenReturn(new ApiResponse<>(ApiResponse.Metadata.success(), pgResponse1));
-        when(pgClient.getTransactionByOrderId("looCommerce", "200"))
+        when(pgClient.getTransaction("looCommerce", "20250822:TR:test2"))
                 .thenReturn(new ApiResponse<>(ApiResponse.Metadata.success(), pgResponse2));
 
         // act
-        paymentStatusCheckScheduler.checkProcessingPayments();
+        paymentStatusCheckScheduler.checkPendingPayments();
 
         // assert
         assertAll(
-                () -> verify(pgClient, times(1)).getTransactionByOrderId("looCommerce", "100"),
-                () -> verify(pgClient, times(1)).getTransactionByOrderId("looCommerce", "200")
+                () -> verify(pgClient, times(1)).getTransaction("looCommerce", "20250822:TR:test1"),
+                () -> verify(pgClient, times(1)).getTransaction("looCommerce", "20250822:TR:test2")
         );
     }
 
     @DisplayName("스케줄러는 PG 연동 중 예외 발생 시 로깅하고 계속 진행한다")
     @Test
-    void checkProcessingPayments_continuesOnPgError() {
+    void checkPendingPayments_continuesOnPgError() {
         // arrange
         Long orderId1 = 100L;
         Long orderId2 = 200L;
         
         Payment payment1 = Payment.create(orderId1, PaymentMethod.CARD, 
-                new BigDecimal("1000"), "tx1", PaymentStatus.PROCESSING);
+                new BigDecimal("1000"), "tx1", PaymentStatus.PENDING);
         Payment payment2 = Payment.create(orderId2, PaymentMethod.CARD, 
-                new BigDecimal("2000"), "tx2", PaymentStatus.PROCESSING);
+                new BigDecimal("2000"), "tx2", PaymentStatus.PENDING);
 
-        when(paymentService.findProcessingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
+        when(paymentService.findPendingPaymentsBetween(any(ZonedDateTime.class), any(ZonedDateTime.class)))
                 .thenReturn(List.of(payment1, payment2));
 
-        when(pgClient.getTransactionByOrderId("looCommerce", "100"))
+        when(pgClient.getTransaction("looCommerce", "tx1"))
                 .thenThrow(new RuntimeException("PG 서버 연결 실패"));
-        when(pgClient.getTransactionByOrderId("looCommerce", "200"))
+        when(pgClient.getTransaction("looCommerce", "tx2"))
                 .thenReturn(new ApiResponse<>(ApiResponse.Metadata.success(), 
                         new PgPaymentDto.TransactionDetailResponse("tx2", "200",
                                 PgPaymentDto.CardType.SAMSUNG, "1234-5678-9012-3456", 2000L,
@@ -207,9 +207,9 @@ class PaymentStatusCheckSchedulerTest extends CommerceApiContextTest {
 
         // act & assert
         assertAll(
-                () -> paymentStatusCheckScheduler.checkProcessingPayments(),
-                () -> verify(pgClient, times(1)).getTransactionByOrderId("looCommerce", "100"),
-                () -> verify(pgClient, times(1)).getTransactionByOrderId("looCommerce", "200")
+                () -> paymentStatusCheckScheduler.checkPendingPayments(),
+                () -> verify(pgClient, times(1)).getTransaction("looCommerce", "tx1"),
+                () -> verify(pgClient, times(1)).getTransaction("looCommerce", "tx2")
         );
     }
 }

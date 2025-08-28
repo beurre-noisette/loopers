@@ -22,6 +22,7 @@ public class OrderService {
     @Transactional
     public Order createOrder(Long userId, OrderItems orderItems) {
         Order order = Order.create(userId, orderItems);
+
         return orderRepository.save(order);
     }
 

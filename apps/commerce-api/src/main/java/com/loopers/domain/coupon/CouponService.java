@@ -27,10 +27,13 @@ public class CouponService {
 
         return couponRepository.save(userCoupon);
     }
-    
-    @Transactional
-    public BigDecimal useCouponAndCalculateDiscount(Long userCouponId, Long orderId, BigDecimal orderAmount) {
-        UserCoupon userCoupon = couponRepository.findByIdWithPessimisticLock(userCouponId)
+
+    public BigDecimal calculateCouponDiscount(Long userCouponId, BigDecimal orderAmount) {
+        if (userCouponId == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        UserCoupon userCoupon = couponRepository.findUserCouponById(userCouponId)
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "발급된 쿠폰을 찾을 수 없습니다."));
         
         if (!userCoupon.canUse()) {
@@ -38,16 +41,25 @@ public class CouponService {
         }
         
         Coupon coupon = userCoupon.getCoupon();
-        BigDecimal discountAmount = coupon.calculateDiscountAmount(orderAmount);
-        
-        userCoupon.use(orderId);
-        
-        return discountAmount;
+
+        return coupon.calculateDiscountAmount(orderAmount);
     }
     
-    public UserCoupon findUserCoupon(Long userCouponId) {
-        return couponRepository.findUserCouponById(userCouponId)
+    public void markCouponAsUsed(Long userCouponId, Long orderId) {
+        if (userCouponId == null) {
+            return;
+        }
+        
+        UserCoupon userCoupon = couponRepository.findByIdWithPessimisticLock(userCouponId)
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "발급된 쿠폰을 찾을 수 없습니다."));
+        
+        if (!userCoupon.canUse()) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "사용할 수 없는 쿠폰입니다.");
+        }
+        
+        userCoupon.use(orderId);
+
+        couponRepository.save(userCoupon);
     }
     
     @Transactional

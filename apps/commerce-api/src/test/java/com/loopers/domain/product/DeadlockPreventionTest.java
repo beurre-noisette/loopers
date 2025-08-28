@@ -107,7 +107,6 @@ class DeadlockPreventionTest {
                                             new OrderCommand.CreateItem(finalProduct2.getId(), 1),
                                             new OrderCommand.CreateItem(finalProduct3.getId(), 1)
                                     ),
-                                    BigDecimal.ZERO,
                                     null,
                                     new PaymentDetails.Point()
                             );
@@ -119,7 +118,6 @@ class DeadlockPreventionTest {
                                             new OrderCommand.CreateItem(finalProduct1.getId(), 1),
                                             new OrderCommand.CreateItem(finalProduct2.getId(), 1)
                                     ),
-                                    BigDecimal.ZERO,
                                     null,
                                     new PaymentDetails.Point()
                             );

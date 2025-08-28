@@ -76,12 +76,16 @@ public class Order extends BaseEntity {
         this.status = OrderStatus.COMPLETED;
     }
 
-    public boolean isPaymentWaiting() {
-        return this.status == OrderStatus.PAYMENT_WAITING;
-    }
-
-    public boolean isCompleted() {
-        return this.status == OrderStatus.COMPLETED;
+    public void applyDiscount(BigDecimal discountAmount) {
+        if (discountAmount == null || discountAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "할인 금액은 0 이상이어야 합니다.");
+        }
+        
+        if (discountAmount.compareTo(this.totalAmount) > 0) {
+            throw new CoreException(ErrorType.INVALID_INPUT_FORMAT, "할인 금액이 주문 금액을 초과할 수 없습니다.");
+        }
+        
+        this.totalAmount = this.totalAmount.subtract(discountAmount);
     }
 
     private static void validateUserId(Long userId) {

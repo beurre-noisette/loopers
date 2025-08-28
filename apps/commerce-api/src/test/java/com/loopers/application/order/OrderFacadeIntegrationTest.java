@@ -118,7 +118,6 @@ class OrderFacadeIntegrationTest {
 
         OrderCommand.Create command = new OrderCommand.Create(
                 List.of(new OrderCommand.CreateItem(savedProduct.getId(), 10)),
-                BigDecimal.ZERO,
                 null,
                 new PaymentDetails.Point()
         );
@@ -159,7 +158,6 @@ class OrderFacadeIntegrationTest {
                         new OrderCommand.CreateItem(savedEnoughStockProduct.getId(), 2),
                         new OrderCommand.CreateItem(savedInsufficientProduct.getId(), 5)
                 ),
-                new  BigDecimal("1000"),
                 null,
                 new PaymentDetails.Point()
         );
@@ -213,10 +211,8 @@ class OrderFacadeIntegrationTest {
         Coupon savedCoupon = couponRepository.save(coupon);
         UserCoupon userCoupon = couponService.issueCoupon(user.getId(), savedCoupon.getId());
 
-        BigDecimal pointsForDiscount = new BigDecimal("1000");
         OrderCommand.Create command = new OrderCommand.Create(
                 List.of(new OrderCommand.CreateItem(savedProduct.getId(), 1)),
-                pointsForDiscount,
                 userCoupon.getId(),
                 new PaymentDetails.Point()
         );
@@ -226,8 +222,8 @@ class OrderFacadeIntegrationTest {
 
         // assert
         assertThat(result).isNotNull();
-        assertThat(result.originalAmount()).isEqualByComparingTo(savedProduct.getPrice());
-        assertThat(result.pointDiscount()).isEqualByComparingTo(pointsForDiscount);
+        assertThat(result.totalAmount()).isEqualByComparingTo(new BigDecimal("5000")); // 원가 10000 - 쿠폰할인 5000 = 5000
+        assertThat(result.status()).isEqualTo(OrderStatus.PAYMENT_WAITING);
     }
 
     @DisplayName("존재하지 않는 쿠폰으로 주문하면 실패한다")
@@ -246,7 +242,6 @@ class OrderFacadeIntegrationTest {
 
         OrderCommand.Create command = new OrderCommand.Create(
                 List.of(new OrderCommand.CreateItem(savedProduct.getId(), 1)),
-                BigDecimal.ZERO,
                 999L, // 존재하지 않는 쿠폰 ID
                 new PaymentDetails.Point()
         );
@@ -292,7 +287,6 @@ class OrderFacadeIntegrationTest {
 
         OrderCommand.Create command = new OrderCommand.Create(
                 List.of(new OrderCommand.CreateItem(savedProduct.getId(), 1)),
-                new BigDecimal("1000"),
                 userCoupon.getId(),
                 new PaymentDetails.Point()
         );

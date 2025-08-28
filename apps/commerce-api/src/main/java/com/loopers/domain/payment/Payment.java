@@ -93,28 +93,6 @@ public class Payment extends BaseEntity {
         this.processedAt = ZonedDateTime.now();
     }
 
-    public void updateProcessing() {
-        if (this.status == PaymentStatus.PROCESSING) {
-            this.processedAt = ZonedDateTime.now();
-        }
-    }
-
-    public boolean isProcessing() {
-        return this.status == PaymentStatus.PROCESSING;
-    }
-
-    public boolean isCompleted() {
-        return this.status == PaymentStatus.SUCCESS || this.status == PaymentStatus.FAILED;
-    }
-
-    public boolean isSuccess() {
-        return this.status == PaymentStatus.SUCCESS;
-    }
-
-    public boolean isFailed() {
-        return this.status == PaymentStatus.FAILED;
-    }
-
     private static void validateOrderId(Long orderId) {
         if (orderId == null || orderId <= 0) {
             throw new CoreException(ErrorType.BAD_REQUEST, "주문 ID는 필수값입니다.");
