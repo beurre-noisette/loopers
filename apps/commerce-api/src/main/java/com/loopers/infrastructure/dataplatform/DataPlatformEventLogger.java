@@ -2,6 +2,8 @@ package com.loopers.infrastructure.dataplatform;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loopers.application.coupon.event.CouponProcessedEvent;
+import com.loopers.application.like.event.LikeCancelledEvent;
+import com.loopers.application.like.event.LikeCreatedEvent;
 import com.loopers.application.order.event.OrderCreatedEvent;
 import com.loopers.application.payment.event.PaymentCompletedEvent;
 import com.loopers.application.payment.event.PaymentFailedEvent;
@@ -34,7 +36,8 @@ public class DataPlatformEventLogger {
                 .userId(event.getUserId())
                 .payload(Map.of(
                         "userCouponId", event.getUserCouponId(),
-                        "paymentMethod", getPaymentMethod(event.getPaymentDetails())
+                        "paymentMethod", getPaymentMethod(event.getPaymentDetails()),
+                        "occurredAt", event.getOccurredAt()
                 ))
                 .build();
 
@@ -50,7 +53,8 @@ public class DataPlatformEventLogger {
                 .userId(event.getUserId())
                 .payload(Map.of(
                         "couponApplied", event.isCouponApplied(),
-                        "userCouponId", event.getUserCouponId()
+                        "userCouponId", event.getUserCouponId(),
+                        "occurredAt", event.getOccurredAt()
                 ))
                 .build();
 
@@ -68,7 +72,8 @@ public class DataPlatformEventLogger {
                         "paymentId", event.getPaymentId(),
                         "transactionKey", event.getTransactionKey(),
                         "paymentMethod", event.getPaymentMethod().name(),
-                        "paidAmount", event.getPaidAmount()
+                        "paidAmount", event.getPaidAmount(),
+                        "occurredAt", event.getOccurredAt()
                 ))
                 .build();
 
@@ -85,7 +90,40 @@ public class DataPlatformEventLogger {
                 .payload(Map.of(
                         "paymentMethod", event.getPaymentMethod().name(),
                         "attemptedAmount", event.getAttemptedAmount(),
-                        "failureReason", event.getFailureReason()
+                        "failureReason", event.getFailureReason(),
+                        "occurredAt", event.getOccurredAt()
+                ))
+                .build();
+
+        logDataPlatformEvent(platformEvent);
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleLikeCreated(LikeCreatedEvent event) {
+        DataPlatformEvent platformEvent = DataPlatformEvent.orderEvent("like_created")
+                .correlationId(event.getCorrelationId())
+                .userId(event.getUserId())
+                .payload(Map.of(
+                        "targetType", event.getTargetType().name(),
+                        "targetId", event.getTargetId(),
+                        "occurredAt", event.getOccurredAt()
+                ))
+                .build();
+
+        logDataPlatformEvent(platformEvent);
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleLikeCancelled(LikeCancelledEvent event) {
+        DataPlatformEvent platformEvent = DataPlatformEvent.orderEvent("like_cancelled")
+                .correlationId(event.getCorrelationId())
+                .userId(event.getUserId())
+                .payload(Map.of(
+                        "targetType", event.getTargetType().name(),
+                        "targetId", event.getTargetId(),
+                        "occurredAt", event.getOccurredAt()
                 ))
                 .build();
 
