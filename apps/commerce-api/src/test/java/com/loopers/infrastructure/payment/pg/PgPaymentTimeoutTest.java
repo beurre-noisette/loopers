@@ -60,7 +60,7 @@ class PgPaymentTimeoutTest extends CommerceApiContextTest {
         // assert
         assertAll(
                 () -> assertThat(result.status()).isIn(
-                        PaymentStatus.PROCESSING, 
+                        PaymentStatus.PENDING, 
                         PaymentStatus.SUCCESS, 
                         PaymentStatus.FAILED
                 ),
@@ -93,9 +93,9 @@ class PgPaymentTimeoutTest extends CommerceApiContextTest {
 
         // assert - 각 요청이 독립적으로 타임아웃 처리되어야 함
         assertAll(
-                () -> assertThat(result1.status()).isIn(PaymentStatus.PROCESSING, PaymentStatus.SUCCESS, PaymentStatus.FAILED),
-                () -> assertThat(result2.status()).isIn(PaymentStatus.PROCESSING, PaymentStatus.SUCCESS, PaymentStatus.FAILED),
-                () -> assertThat(result3.status()).isIn(PaymentStatus.PROCESSING, PaymentStatus.SUCCESS, PaymentStatus.FAILED),
+                () -> assertThat(result1.status()).isIn(PaymentStatus.PENDING, PaymentStatus.SUCCESS, PaymentStatus.FAILED),
+                () -> assertThat(result2.status()).isIn(PaymentStatus.PENDING, PaymentStatus.SUCCESS, PaymentStatus.FAILED),
+                () -> assertThat(result3.status()).isIn(PaymentStatus.PENDING, PaymentStatus.SUCCESS, PaymentStatus.FAILED),
                 
                 () -> assertThat(result1.amount()).isEqualTo(amount),
                 () -> assertThat(result2.amount()).isEqualTo(amount),

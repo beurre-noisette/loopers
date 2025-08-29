@@ -2,7 +2,6 @@ package com.loopers.application.payment;
 
 import com.loopers.domain.payment.Payment;
 import com.loopers.domain.payment.PaymentService;
-import com.loopers.domain.payment.PaymentStatus;
 import com.loopers.infrastructure.payment.pg.PgClient;
 import com.loopers.infrastructure.payment.pg.PgPaymentDto;
 import com.loopers.interfaces.api.ApiResponse;
@@ -12,10 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 
 @Component
 @Slf4j
@@ -24,6 +23,15 @@ public class PaymentStatusCheckScheduler {
     private final PaymentService paymentService;
     private final PaymentFacade paymentFacade;
     private final PgClient pgClient;
+    
+    @Value("${scheduler.payment.batch-size:50}")
+    private int batchSize;
+    
+    @Value("${scheduler.payment.check-delay-minutes:1}")
+    private int checkDelayMinutes;
+    
+    @Value("${scheduler.payment.max-delay-minutes:10}")
+    private int maxDelayMinutes;
 
     @Autowired
     public PaymentStatusCheckScheduler(
@@ -37,36 +45,47 @@ public class PaymentStatusCheckScheduler {
     }
 
     @Scheduled(fixedDelay = 30000)
-    @Transactional
-    public void checkProcessingPayments() {
+    public void checkPendingPayments() {
         try {
-            ZonedDateTime oneMinuteAgo = ZonedDateTime.now().minusMinutes(1);
-            ZonedDateTime tenMinutesAgo = ZonedDateTime.now().minusMinutes(10);
+            ZonedDateTime checkDelayAgo = ZonedDateTime.now().minusMinutes(checkDelayMinutes);
+            ZonedDateTime maxDelayAgo = ZonedDateTime.now().minusMinutes(maxDelayMinutes);
 
-            List<Payment> processingPayments = paymentService.findProcessingPaymentsBetween(
-                    tenMinutesAgo, oneMinuteAgo);
+            List<Payment> pendingPayments = paymentService.findPendingPaymentsBetween(
+                    maxDelayAgo, checkDelayAgo);
 
-            if (processingPayments.isEmpty()) {
+            if (pendingPayments.isEmpty()) {
+                log.debug("상태 확인이 필요한 PENDING 결제가 없습니다.");
                 return;
             }
 
-            log.info("PROCESSING 상태 결제 {}건 상태 확인 시작", processingPayments.size());
+            List<Payment> batchPayments = pendingPayments.stream()
+                    .limit(batchSize)
+                    .toList();
 
-            for (Payment payment : processingPayments) {
+            log.info("PENDING 상태 결제 {}건 상태 확인 시작 (전체: {}건, 배치: {}건)", 
+                    batchPayments.size(), pendingPayments.size(), batchSize);
+
+            int successCount = 0;
+            int errorCount = 0;
+
+            for (Payment payment : batchPayments) {
                 try {
                     checkAndUpdatePaymentStatus(payment);
+                    successCount++;
                 } catch (Exception e) {
+                    errorCount++;
                     log.error("결제 상태 확인 중 오류 발생 -> paymentId: {}, orderId: {}", 
                             payment.getId(), payment.getOrderId(), e);
                 }
             }
 
-            log.info("결제 상태 확인 완료 -> 처리된 건수: {}", processingPayments.size());
+            log.info("결제 상태 확인 완료 -> 성공: {}건, 실패: {}건", successCount, errorCount);
 
         } catch (Exception e) {
             log.error("결제 상태 확인 스케줄러 실행 중 오류 발생", e);
         }
     }
+
 
     @CircuitBreaker(name = "pgCircuit", fallbackMethod = "fallbackStatusCheck")
     @Retry(name = "pgRetry")
@@ -75,8 +94,12 @@ public class PaymentStatusCheckScheduler {
             log.debug("PG 결제 상태 확인 시작 -> paymentId: {}, orderId: {}", 
                     payment.getId(), payment.getOrderId());
 
-            ApiResponse<PgPaymentDto.TransactionDetailResponse> response =
-                    pgClient.getTransactionByOrderId("looCommerce", String.valueOf(payment.getOrderId()));
+            ApiResponse<PgPaymentDto.TransactionDetailResponse> response;
+            if (payment.getTransactionKey() != null) {
+                response = pgClient.getTransaction("looCommerce", payment.getTransactionKey());
+            } else {
+                response = pgClient.getTransactionByOrderId("looCommerce", String.valueOf(payment.getOrderId()));
+            }
 
             if (response.meta().result() == ApiResponse.Metadata.Result.SUCCESS) {
                 PgPaymentDto.TransactionDetailResponse pgTransaction = response.data();
@@ -106,5 +129,14 @@ public class PaymentStatusCheckScheduler {
     private void fallbackStatusCheck(Payment payment, Exception exception) {
         log.warn("PG 상태 확인 실패로 Fallback 처리 -> paymentId: {}, orderId: {}, error: {}", 
                 payment.getId(), payment.getOrderId(), exception.getMessage());
+        
+        ZonedDateTime urgentReviewThreshold = ZonedDateTime.now().minusMinutes(30);
+        
+        if (payment.getCreatedAt().isBefore(urgentReviewThreshold)) {
+            log.error("URGENT: 결제 장기 타임아웃 - 수동 검토 필요 -> paymentId: {}, orderId: {}, 생성시간: {}", 
+                    payment.getId(), payment.getOrderId(), payment.getCreatedAt());
+            
+            // 실제 PaymentFailedEvent는 수동 검토 후 처리
+        }
     }
 }

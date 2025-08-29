@@ -37,7 +37,6 @@ public class OrderV1Controller implements OrderV1ApiSpec {
 
         OrderCommand.Create command = new OrderCommand.Create(
             commandItems,
-            request.pointToDiscount(),
             request.userCouponId(),
             paymentDetails
         );

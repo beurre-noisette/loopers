@@ -49,56 +49,15 @@ public class PaymentService {
         return savedPayment;
     }
 
-    @Transactional
-    public void markPaymentSuccess(Long orderId, String transactionKey) {
-        Payment payment = findPaymentByOrderId(orderId);
-
-        payment.markSuccess(transactionKey);
-
-        paymentRepository.save(payment);
-    }
-
-    @Transactional
-    public void markPaymentFailed(Long orderId, String reason) {
-        Payment payment = findPaymentByOrderId(orderId);
-
-        payment.markFailed(reason);
-
-        paymentRepository.save(payment);
-    }
-
-    @Transactional
-    public void updatePaymentProcessing(Long orderId) {
-        Payment payment = findPaymentByOrderId(orderId);
-
-        payment.updateProcessing();
-
-        paymentRepository.save(payment);
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<Payment> findByOrderId(Long orderId) {
-        return paymentRepository.findByOrderId(orderId);
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<Payment> findByTransactionKey(String transactionKey) {
-        return paymentRepository.findByTransactionKey(transactionKey);
-    }
-
-    @Transactional(readOnly = true)
-    public List<Payment> findStaleProcessingPayments(ZonedDateTime cutoff) {
-        return paymentRepository.findByStatusAndProcessedAtBefore(PaymentStatus.PROCESSING, cutoff);
-    }
-
-    @Transactional(readOnly = true)
-    public List<Payment> findProcessingPaymentsBetween(ZonedDateTime startTime, ZonedDateTime endTime) {
-        return paymentRepository.findByStatusAndCreatedAtBetween(PaymentStatus.PROCESSING, startTime, endTime);
-    }
-
-    private Payment findPaymentByOrderId(Long orderId) {
+    public Payment findByOrderId(Long orderId) {
         return paymentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, 
-                        "해당 주문의 결제 정보를 찾을 수 없습니다. orderId: " + orderId));
+                .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND,
+                        "결제 정보를 찾을 수 없습니다. orderId: " + orderId));
     }
+
+    @Transactional(readOnly = true)
+    public List<Payment> findPendingPaymentsBetween(ZonedDateTime startTime, ZonedDateTime endTime) {
+        return paymentRepository.findByStatusAndCreatedAtBetween(PaymentStatus.PENDING, startTime, endTime);
+    }
+
 }

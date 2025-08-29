@@ -1,12 +1,13 @@
 package com.loopers.application.like;
 
-import com.loopers.application.product.ProductQuery;
+import com.loopers.application.like.event.LikeCancelledEvent;
+import com.loopers.application.like.event.LikeCreatedEvent;
 import com.loopers.domain.like.*;
-import com.loopers.domain.product.ProductService;
 import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,18 +17,15 @@ public class LikeFacade {
 
     private final UserService userService;
     private final LikeService likeService;
-    private final ProductService productService;
-    private final ProductQuery productQuery;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
     public LikeFacade(UserService userService, 
-                     LikeService likeService, 
-                     ProductService productService,
-                     ProductQuery productQuery) {
+                     LikeService likeService,
+                     ApplicationEventPublisher eventPublisher) {
         this.userService = userService;
         this.likeService = likeService;
-        this.productService = productService;
-        this.productQuery = productQuery;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -39,9 +37,15 @@ public class LikeFacade {
         boolean isCreated = likeService.createLike(user, target);
         
         if (isCreated) {
-            increaseLikeCountByTargetType(command);
-
-            evictCacheByTargetType(command);
+            LikeCreatedEvent event = LikeCreatedEvent.of(
+                    user.getId(),
+                    command.targetType(),
+                    command.targetId()
+            );
+            eventPublisher.publishEvent(event);
+            
+            log.info("좋아요 생성 이벤트 발행 - userId: {}, targetType: {}, targetId: {}, correlationId: {}",
+                    user.getId(), command.targetType(), command.targetId(), event.getCorrelationId());
         }
     }
 
@@ -54,9 +58,15 @@ public class LikeFacade {
         boolean isCancelled = likeService.cancelLike(user, target);
         
         if (isCancelled) {
-            decreaseLikeCountByTargetType(command);
+            LikeCancelledEvent event = LikeCancelledEvent.of(
+                    user.getId(),
+                    command.targetType(),
+                    command.targetId()
+            );
+            eventPublisher.publishEvent(event);
             
-            evictCacheByTargetType(command);
+            log.info("좋아요 취소 이벤트 발행 - userId: {}, targetType: {}, targetId: {}, correlationId: {}",
+                    user.getId(), command.targetType(), command.targetId(), event.getCorrelationId());
         }
     }
 
@@ -64,25 +74,5 @@ public class LikeFacade {
         return switch (targetType) {
             case PRODUCT -> ProductTarget.of(targetId);
         };
-    }
-
-    private void increaseLikeCountByTargetType(LikeCommand.Create command) {
-        switch (command.targetType()) {
-            case PRODUCT -> productService.increaseLikeCount(command.targetId());
-        }
-    }
-
-    private void decreaseLikeCountByTargetType(LikeCommand.Create command) {
-        switch (command.targetType()) {
-            case PRODUCT -> productService.decreaseLikeCount(command.targetId());
-        }
-    }
-    
-    private void evictCacheByTargetType(LikeCommand.Create command) {
-        switch (command.targetType()) {
-            case PRODUCT -> {
-                productQuery.evictProductDetailCache(command.targetId());
-            }
-        }
     }
 }

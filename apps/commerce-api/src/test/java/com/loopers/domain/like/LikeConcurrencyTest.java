@@ -163,8 +163,17 @@ class LikeConcurrencyTest {
         assertThat(likeCount).isEqualTo(threadCount);
         assertThat(successCount.get()).isEqualTo(threadCount);
         
+        // 비동기 집계가 완료될 때까지 대기 (최대 5초)
+        int maxRetries = 50;
+        int retryCount = 0;
+        Product finalProduct;
+        do {
+            Thread.sleep(100);
+            finalProduct = productRepository.findById(productId).orElseThrow();
+            retryCount++;
+        } while (finalProduct.getLikeCount() != (initialLikeCount + threadCount) && retryCount < maxRetries);
+        
         // Product의 like_count도 threadCount만큼 증가해야 함
-        Product finalProduct = productRepository.findById(productId).orElseThrow();
         assertThat(finalProduct.getLikeCount()).isEqualTo(initialLikeCount + threadCount);
     }
 
@@ -279,8 +288,17 @@ class LikeConcurrencyTest {
         assertThat(finalLikeCount).isEqualTo(userCount);
         assertThat(successCount.get()).isEqualTo(userCount);
         
+        // 비동기 집계가 완료될 때까지 대기 (최대 5초)
+        int maxRetries = 50;
+        int retryCount = 0;
+        Product finalProduct;
+        do {
+            Thread.sleep(100);
+            finalProduct = productRepository.findById(productId).orElseThrow();
+            retryCount++;
+        } while (finalProduct.getLikeCount() != (initialLikeCount + userCount) && retryCount < maxRetries);
+        
         // Product의 like_count도 userCount만큼 증가해야 함
-        Product finalProduct = productRepository.findById(productId).orElseThrow();
         assertThat(finalProduct.getLikeCount()).isEqualTo(initialLikeCount + userCount);
         
         // Like 테이블의 카운트와 Product의 like_count가 일치해야 함

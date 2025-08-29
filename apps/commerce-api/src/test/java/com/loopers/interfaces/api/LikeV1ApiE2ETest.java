@@ -100,9 +100,9 @@ class LikeV1ApiE2ETest {
             );
         }
 
-        @DisplayName("존재하지 않는 상품에 좋아요를 등록할 경우, 404 Not Found 응답을 반환한다.")
+        @DisplayName("존재하지 않는 상품에 좋아요를 등록할 경우에도 좋아요는 성공한다")
         @Test
-        void return404NotFound_whenProductNotExists() {
+        void returnSuccess_evenWhenProductNotExists() {
             // arrange
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-USER-ID", testUser.getAccountId());
@@ -118,7 +118,11 @@ class LikeV1ApiE2ETest {
             );
 
             // assert
-            assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+            assertAll(
+                () -> assertTrue(response.getStatusCode().is2xxSuccessful()),
+                () -> assertNotNull(response.getBody()),
+                () -> assertEquals("SUCCESS", response.getBody().meta().result().name())
+            );
         }
     }
 

@@ -89,6 +89,12 @@ datasource:
       - host: ${REDIS_REPLICA_HOST:localhost}
         port: ${REDIS_REPLICA_PORT:6380}
 
+scheduler:
+  payment:
+    batch-size: 50
+    check-delay-minutes: 1
+    max-delay-minutes: 10
+
 ---
 spring:
   config:

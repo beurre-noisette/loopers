@@ -33,4 +33,10 @@ public class UserService {
                 () -> new CoreException(ErrorType.USER_NOT_FOUND, accountId)
         );
     }
+
+    public User findById(Long userId) {
+        return userRepository.findById(userId).orElseThrow(
+                () -> new CoreException(ErrorType.USER_NOT_FOUND, "존재하지 않는 유저입니다.")
+        );
+    }
 }

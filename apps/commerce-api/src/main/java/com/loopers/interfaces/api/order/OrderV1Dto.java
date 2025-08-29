@@ -15,7 +15,6 @@ public class OrderV1Dto {
 
     public record OrderCreateRequest(
         List<OrderItemRequest> items,
-        BigDecimal pointToDiscount,
         Long userCouponId,
         PaymentMethod paymentMethod,
         CardInfoRequest cardInfo
@@ -34,7 +33,7 @@ public class OrderV1Dto {
         public static OrderCreateResponse from(OrderInfo orderInfo) {
             return new OrderCreateResponse(
                 orderInfo.orderId(),
-                orderInfo.finalAmount(),
+                orderInfo.totalAmount(),
                 orderInfo.status().name()
             );
         }

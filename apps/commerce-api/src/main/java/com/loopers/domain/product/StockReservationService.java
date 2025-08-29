@@ -70,9 +70,4 @@ public class StockReservationService {
             stockReservationJpaRepository.save(reservation);
         });
     }
-
-    @Transactional(readOnly = true)
-    public List<StockReservation> getReservations(Long orderId) {
-        return stockReservationRepository.findByOrderId(orderId);
-    }
 }

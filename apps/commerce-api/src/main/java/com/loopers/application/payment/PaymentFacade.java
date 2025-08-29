@@ -1,18 +1,16 @@
 package com.loopers.application.payment;
 
-import com.loopers.application.order.event.OrderCreatedEvent;
-import com.loopers.domain.discount.DiscountService;
+import com.loopers.application.payment.event.PaymentCompletedEvent;
+import com.loopers.application.payment.event.PaymentFailedEvent;
 import com.loopers.domain.order.Order;
 import com.loopers.domain.order.OrderService;
-import com.loopers.domain.payment.*;
-import com.loopers.domain.payment.command.PaymentCommandFactory;
-import com.loopers.domain.product.StockReservationService;
-import com.loopers.domain.user.User;
-import com.loopers.domain.user.UserService;
-import com.loopers.support.error.CoreException;
-import com.loopers.support.error.ErrorType;
+import com.loopers.domain.payment.Payment;
+import com.loopers.domain.payment.PaymentResult;
+import com.loopers.domain.payment.PaymentService;
+import com.loopers.domain.payment.PaymentStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,63 +21,18 @@ import java.time.ZonedDateTime;
 public class PaymentFacade {
 
     private final OrderService orderService;
-    private final PaymentProcessorFactory paymentProcessorFactory;
-    private final PaymentCommandFactory paymentCommandFactory;
-    private final StockReservationService stockReservationService;
-    private final UserService userService;
     private final PaymentService paymentService;
-    private final DiscountService discountService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
     public PaymentFacade(
             OrderService orderService,
-            PaymentProcessorFactory paymentProcessorFactory,
-            PaymentCommandFactory paymentCommandFactory,
-            StockReservationService stockReservationService,
-            UserService userService,
             PaymentService paymentService,
-            DiscountService discountService
+            ApplicationEventPublisher eventPublisher
     ) {
         this.orderService = orderService;
-        this.paymentProcessorFactory = paymentProcessorFactory;
-        this.paymentCommandFactory = paymentCommandFactory;
-        this.stockReservationService = stockReservationService;
-        this.userService = userService;
         this.paymentService = paymentService;
-        this.discountService = discountService;
-    }
-
-    @Transactional
-    public void processPaymentFromEvent(OrderCreatedEvent event) {
-        log.info("이벤트 기반 결제 처리 시작 - orderId: {}, amount: {}",
-                event.getOrderId(), event.getTotalAmount());
-
-        Order order = orderService.findById(event.getOrderId());
-        
-        try {
-            PaymentCommand paymentCommand = paymentCommandFactory.create(
-                    event.getOrderId(),
-                    event.getTotalAmount(),
-                    event.getPaymentDetails()
-            );
-            
-            User user = userService.findByAccountId(event.getAccountId());
-            PaymentProcessor paymentProcessor = paymentProcessorFactory.getPaymentProcessor(paymentCommand.getMethod());
-            PaymentResult result = paymentProcessor.processPayment(user.getId(), paymentCommand);
-            
-            Payment payment = paymentService.createPaymentFromResult(
-                    event.getOrderId(),
-                    paymentCommand.getMethod(),
-                    result
-            );
-
-            handlePaymentResult(order, payment, result);
-
-        } catch (Exception e) {
-            log.error("이벤트 기반 결제 처리 실패 - orderId: {}", event.getOrderId(), e);
-            
-            rollbackOrder(order, "결제 처리 중 시스템 오류: " + e.getMessage());
-        }
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -90,9 +43,7 @@ public class PaymentFacade {
         try {
             Long orderIdInOurService = Long.parseLong(orderId);
             Order order = orderService.findById(orderIdInOurService);
-            Payment payment = paymentService.findByOrderId(orderIdInOurService)
-                    .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND,
-                            "결제 정보를 찾을 수 없습니다. orderId: " + orderId));
+            Payment payment = paymentService.findByOrderId(orderIdInOurService);
 
             PaymentStatus paymentStatus = PaymentStatus.valueOf(status.toUpperCase());
             PaymentResult result = new PaymentResult(
@@ -117,49 +68,34 @@ public class PaymentFacade {
     private void handlePaymentResult(Order order, Payment payment, PaymentResult result) {
         switch (result.status()) {
             case SUCCESS -> {
-                completeOrder(order);
-                log.info("결제 성공 및 주문 완료 - orderId: {}, paymentId: {}, transactionKey: {}",
-                        order.getId(), payment.getId(), result.transactionKey());
-            }
-            case PROCESSING -> {
-                order.processingPayment();
-                log.info("결제 처리 중 - orderId: {}, paymentId: {}, transactionKey: {}", 
+                payment.markSuccess(result.transactionKey());
+                PaymentCompletedEvent completedEvent = PaymentCompletedEvent.of(
+                        "PG-CALLBACK-" + result.transactionKey(),
+                        order.getId(),
+                        order.getUserId(),
+                        payment.getId(),
+                        result.transactionKey(),
+                        payment.getMethod(),
+                        payment.getAmount()
+                );
+                eventPublisher.publishEvent(completedEvent);
+                log.info("결제 성공 이벤트 발행 - orderId: {}, paymentId: {}, transactionKey: {}",
                         order.getId(), payment.getId(), result.transactionKey());
             }
             case FAILED -> {
-                log.error("결제 실패 - orderId: {}, paymentId: {}, reason: {}",
+                payment.markFailed(result.transactionKey());
+                PaymentFailedEvent failedEvent = PaymentFailedEvent.of(
+                        "PG-CALLBACK-" + result.transactionKey(),
+                        order.getId(),
+                        order.getUserId(),
+                        payment.getMethod(),
+                        payment.getAmount(),
+                        result.message()
+                );
+                eventPublisher.publishEvent(failedEvent);
+                log.error("결제 실패 이벤트 발행 - orderId: {}, paymentId: {}, reason: {}",
                         order.getId(), payment.getId(), result.message());
-                rollbackOrder(order, result.message());
             }
-        }
-    }
-    
-    private void rollbackOrder(Order order, String failureReason) {
-        log.info("주문 롤백 시작 - orderId: {}, reason: {}", order.getId(), failureReason);
-        
-        try {
-            stockReservationService.releaseReservation(order.getId());
-            log.info("재고 예약 해제 완료 - orderId: {}", order.getId());
-            
-            discountService.rollbackDiscount(order.getId());
-            log.info("할인 수단 복구 완료 - orderId: {}", order.getId());
-            
-            order.cancel("결제 실패: " + failureReason);
-            log.info("주문 취소 완료 - orderId: {}, status: CANCELLED", order.getId());
-        } catch (Exception e) {
-            log.error("주문 롤백 중 오류 발생 - orderId: {}", order.getId(), e);
-            order.cancel("결제 실패 및 롤백 처리 중 오류: " + e.getMessage());
-        }
-    }
-
-    private void completeOrder(Order order) {
-        try {
-            stockReservationService.confirmReservation(order.getId());
-
-            order.completePayment();
-        } catch (Exception e) {
-            log.error("주문 완료 처리 중 오류 발생 - orderId: {}", order.getId(), e);
-            throw e;
         }
     }
 
