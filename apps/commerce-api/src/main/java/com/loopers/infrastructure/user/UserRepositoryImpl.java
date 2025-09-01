@@ -31,4 +31,9 @@ public class UserRepositoryImpl implements UserRepository {
     public Optional<User> findByAccountId(String accountId) {
         return Optional.ofNullable(userJpaRepository.findByAccountId(accountId));
     }
+
+    @Override
+    public Optional<User> findById(Long userId) {
+        return userJpaRepository.findById(userId);
+    }
 }

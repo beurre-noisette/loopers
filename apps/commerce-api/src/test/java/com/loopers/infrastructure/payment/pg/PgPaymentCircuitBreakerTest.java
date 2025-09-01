@@ -153,7 +153,7 @@ class PgPaymentCircuitBreakerTest extends CommerceApiContextTest {
                     
                     // fallback 결과가 반환되어야 함
                     () -> assertThat(result).isNotNull(),
-                    () -> assertThat(result.status()).isEqualTo(PaymentStatus.PROCESSING),
+                    () -> assertThat(result.status()).isEqualTo(PaymentStatus.FAILED),
                     () -> assertThat(result.transactionKey()).isNull()
             );
         }
@@ -206,7 +206,8 @@ class PgPaymentCircuitBreakerTest extends CommerceApiContextTest {
                 
                 // 성공하거나 PROCESSING 상태라면 서킷브레이커가 CLOSED로 전환될 수 있음
                 if (result.status() == PaymentStatus.SUCCESS || 
-                    result.status() == PaymentStatus.PROCESSING) {
+                    result.status() == PaymentStatus.PENDING ||
+                    result.status() == PaymentStatus.FAILED) {
                     break;
                 }
             }

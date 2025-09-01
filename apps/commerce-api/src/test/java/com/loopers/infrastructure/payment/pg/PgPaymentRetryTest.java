@@ -62,7 +62,7 @@ class PgPaymentRetryTest extends CommerceApiContextTest {
                 // 결과는 항상 반환되어야 함 (성공하거나 최종 실패)
                 () -> assertThat(result).isNotNull(),
                 () -> assertThat(result.status()).isIn(
-                        PaymentStatus.PROCESSING, 
+                        PaymentStatus.PENDING, 
                         PaymentStatus.SUCCESS, 
                         PaymentStatus.FAILED
                 ),
@@ -107,7 +107,7 @@ class PgPaymentRetryTest extends CommerceApiContextTest {
             assertAll(
                     () -> assertThat(result).isNotNull(),
                     () -> assertThat(result.status()).isIn(
-                            PaymentStatus.PROCESSING, 
+                            PaymentStatus.PENDING, 
                             PaymentStatus.SUCCESS, 
                             PaymentStatus.FAILED
                     ),
@@ -153,7 +153,7 @@ class PgPaymentRetryTest extends CommerceApiContextTest {
         assertAll(
                 () -> assertThat(result).isNotNull(),
                 () -> assertThat(result.status()).isIn(
-                        PaymentStatus.PROCESSING, 
+                        PaymentStatus.PENDING, 
                         PaymentStatus.SUCCESS, 
                         PaymentStatus.FAILED
                 ),
@@ -167,7 +167,7 @@ class PgPaymentRetryTest extends CommerceApiContextTest {
         System.out.println("Result: " + result.status() + ", execution time: " + executionTime + "ms");
         
         // 성공했다면 빠른 시간 내에 완료되어야 함
-        if (result.status() == PaymentStatus.SUCCESS || result.status() == PaymentStatus.PROCESSING) {
+        if (result.status() == PaymentStatus.SUCCESS || result.status() == PaymentStatus.PENDING) {
             // PG 응답 시간 (100ms~500ms) + 네트워크 오버헤드를 고려
             assertThat(executionTime).isLessThan(2000L);
         }

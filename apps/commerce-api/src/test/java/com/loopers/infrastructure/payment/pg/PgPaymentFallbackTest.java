@@ -58,7 +58,7 @@ class PgPaymentFallbackTest extends CommerceApiContextTest {
         assertAll(
                 () -> assertThat(result).isNotNull(),
                 () -> assertThat(result.status()).isIn(
-                        PaymentStatus.PROCESSING,  // 성공한 경우
+                        PaymentStatus.PENDING,  // 성공한 경우
                         PaymentStatus.SUCCESS,     // 즉시 성공한 경우
                         PaymentStatus.FAILED      // fallback으로 실패 처리된 경우
                 ),
@@ -68,7 +68,7 @@ class PgPaymentFallbackTest extends CommerceApiContextTest {
         );
 
         // fallback 처리되었는지 확인
-        if (result.transactionKey() == null && result.status() == PaymentStatus.PROCESSING) {
+        if (result.transactionKey() == null && result.status() == PaymentStatus.PENDING) {
             // fallback으로 처리된 경우
             assertThat(result.message()).containsAnyOf("PG", "장애", "확인");
         }
@@ -98,7 +98,7 @@ class PgPaymentFallbackTest extends CommerceApiContextTest {
             finalResult = result;
             
             // fallback 처리된 결과가 나왔는지 확인
-            if (result.transactionKey() == null && result.status() == PaymentStatus.PROCESSING) {
+            if (result.transactionKey() == null && result.status() == PaymentStatus.PENDING) {
                 break;
             }
             
@@ -142,7 +142,7 @@ class PgPaymentFallbackTest extends CommerceApiContextTest {
         if (fallbackResult != null) {
             assertAll(
                     () -> assertThat(fallbackResult.status()).isIn(
-                            PaymentStatus.PROCESSING, PaymentStatus.FAILED
+                            PaymentStatus.PENDING, PaymentStatus.FAILED
                     ),
                     () -> assertThat(fallbackResult.message()).isNotBlank(),
                     () -> assertThat(fallbackResult.transactionKey()).isNull(),

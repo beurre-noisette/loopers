@@ -76,7 +76,7 @@ class LikeCacheIntegrationTest {
     
     @Test
     @DisplayName("좋아요 등록 후 캐시된 상품 조회 시 like_count가 반영된다.")
-    void whenLikeProduct_cacheIsEvictedAndLikeCountUpdated() {
+    void whenLikeProduct_cacheIsEvictedAndLikeCountUpdated() throws InterruptedException {
         // arrange
         Long productId = testProduct.getId();
         String userId = testUser.getAccountId();
@@ -89,6 +89,10 @@ class LikeCacheIntegrationTest {
         LikeCommand.Create likeCommand = new LikeCommand.Create(userId, TargetType.PRODUCT, productId);
         
         likeFacade.createLike(likeCommand);
+        
+        // 비동기 집계 처리 완료 대기
+        Thread.sleep(500);
+        
         ProductQuery.ProductDetailResult secondResult = productQuery.getProductDetailWithCache(productId);
 
         // assert - 캐시가 무효화되어 최신 like_count가 반영되어야 함
@@ -98,7 +102,7 @@ class LikeCacheIntegrationTest {
     
     @Test
     @DisplayName("좋아요 취소 후 캐시된 상품 조회 시 like_count가 반영된다.")
-    void whenCancelLike_cacheIsEvictedAndLikeCountUpdated() {
+    void whenCancelLike_cacheIsEvictedAndLikeCountUpdated() throws InterruptedException {
         // arrange
         Long productId = testProduct.getId();
         String userId = testUser.getAccountId();
@@ -107,11 +111,18 @@ class LikeCacheIntegrationTest {
         
         likeFacade.createLike(likeCommand);
         
+        // 비동기 집계 처리 완료 대기
+        Thread.sleep(500);
+        
         // 캐시에 like_count = 1인 상태로 저장
         ProductQuery.ProductDetailResult beforeCancel = productQuery.getProductDetailWithCache(productId);
 
         // act - 좋아요 취소
         likeFacade.cancelLike(likeCommand);
+        
+        // 비동기 집계 처리 완료 대기
+        Thread.sleep(500);
+        
         ProductQuery.ProductDetailResult afterCancel = productQuery.getProductDetailWithCache(productId);
         
         // assert - 캐시가 무효화되어 like_count = 0으로 반영되어야 함
@@ -122,7 +133,7 @@ class LikeCacheIntegrationTest {
     
     @Test
     @DisplayName("여러 사용자가 좋아요 등록 시 캐시 무효화 정상 동작한다.")
-    void whenMultipleUsersLike_cacheEvictionWorksCorrectly() {
+    void whenMultipleUsersLike_cacheEvictionWorksCorrectly() throws InterruptedException {
         // arrange
         Long productId = testProduct.getId();
         
@@ -135,12 +146,15 @@ class LikeCacheIntegrationTest {
         
         // act - 3명이 순차적으로 좋아요
         likeFacade.createLike(new LikeCommand.Create(testUser.getAccountId(), TargetType.PRODUCT, productId));
+        Thread.sleep(500); // 비동기 집계 처리 완료 대기
         ProductQuery.ProductDetailResult result1 = productQuery.getProductDetailWithCache(productId);
 
         likeFacade.createLike(new LikeCommand.Create(user2.getAccountId(), TargetType.PRODUCT, productId));
+        Thread.sleep(500); // 비동기 집계 처리 완료 대기
         ProductQuery.ProductDetailResult result2 = productQuery.getProductDetailWithCache(productId);
 
         likeFacade.createLike(new LikeCommand.Create(user3.getAccountId(), TargetType.PRODUCT, productId));
+        Thread.sleep(500); // 비동기 집계 처리 완료 대기
         ProductQuery.ProductDetailResult finalResult = productQuery.getProductDetailWithCache(productId);
         
         // assert - 최종 확인
