@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -16,12 +17,17 @@ public class StockReservationService {
     private final StockReservationRepository stockReservationRepository;
     private final StockReservationJpaRepository stockReservationJpaRepository;
     private final StockManagementService stockManagementService;
+    private final ProductRepository productRepository;
 
     @Autowired
-    public StockReservationService(StockReservationRepository stockReservationRepository, StockReservationJpaRepository stockReservationJpaRepository, StockManagementService stockManagementService) {
+    public StockReservationService(StockReservationRepository stockReservationRepository, 
+                                   StockReservationJpaRepository stockReservationJpaRepository, 
+                                   StockManagementService stockManagementService,
+                                   ProductRepository productRepository) {
         this.stockReservationRepository = stockReservationRepository;
         this.stockReservationJpaRepository = stockReservationJpaRepository;
         this.stockManagementService = stockManagementService;
+        this.productRepository = productRepository;
     }
 
     @Transactional
@@ -42,7 +48,7 @@ public class StockReservationService {
     }
 
     @Transactional
-    public void confirmReservation(Long orderId) {
+    public List<StockReservationResult> confirmReservation(Long orderId) {
         List<StockReservation> reservations = stockReservationRepository.findByOrderId(orderId);
         
         if(reservations.isEmpty()) {
@@ -53,21 +59,37 @@ public class StockReservationService {
             reservation.confirm();
             stockReservationJpaRepository.save(reservation);
         });
+        
+        List<StockReservationResult> stockReservationResults = new ArrayList<>();
+        for (StockReservation reservation : reservations) {
+            Product product = productRepository.findById(reservation.getProductId())
+                    .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
+            
+            stockReservationResults.add(StockReservationResult.of(
+                    reservation.getProductId(),
+                    reservation.getQuantity(),
+                    product.getStock()
+            ));
+        }
+        
+        return stockReservationResults;
     }
 
     @Transactional
-    public void releaseReservation(Long orderId) {
+    public List<StockReservationResult> releaseReservation(Long orderId) {
         List<StockReservation> reservations = stockReservationRepository.findByOrderId(orderId);
 
         if (reservations.isEmpty()) {
-            return;
+            return List.of();
         }
 
-        stockManagementService.increaseStock(reservations);
+        List<StockReservationResult> stockResults = stockManagementService.increaseStock(reservations);
 
         reservations.forEach(reservation -> {
             reservation.release();
             stockReservationJpaRepository.save(reservation);
         });
+        
+        return stockResults;
     }
 }

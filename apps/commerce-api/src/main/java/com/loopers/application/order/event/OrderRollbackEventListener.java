@@ -2,7 +2,10 @@ package com.loopers.application.order.event;
 
 import com.loopers.domain.order.Order;
 import com.loopers.domain.order.OrderService;
+import com.loopers.domain.product.StockReservationResult;
 import com.loopers.domain.product.StockReservationService;
+import com.loopers.infrastructure.kafka.KafkaEventPublisher;
+import com.loopers.infrastructure.kafka.event.StockAdjustedKafkaEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -12,6 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.UUID;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -19,6 +26,7 @@ public class OrderRollbackEventListener {
     
     private final OrderService orderService;
     private final StockReservationService stockReservationService;
+    private final KafkaEventPublisher kafkaEventPublisher;
     
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -30,8 +38,23 @@ public class OrderRollbackEventListener {
         try {
             Order order = orderService.findById(event.getOrderId());
             
-            stockReservationService.releaseReservation(event.getOrderId());
+            List<StockReservationResult> stockResults = stockReservationService.releaseReservation(event.getOrderId());
             log.info("재고 예약 해제 완료 - orderId: {}", event.getOrderId());
+            
+            stockResults.forEach(result -> {
+                StockAdjustedKafkaEvent kafkaEvent = StockAdjustedKafkaEvent.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .aggregateId(result.productId())
+                        .productId(result.productId())
+                        .adjustedQuantity(result.reservedQuantity())
+                        .currentStock(result.currentStock())
+                        .occurredAt(ZonedDateTime.now())
+                        .build();
+                
+                kafkaEventPublisher.publishStockAdjustedEvent(kafkaEvent);
+                log.debug("재고 복구 이벤트 발행 - productId: {}, adjustedQuantity: {}, currentStock: {}", 
+                        result.productId(), result.reservedQuantity(), result.currentStock());
+            });
             
             String cancelReason = String.format("%s: %s",
                     getRollbackTypeMessage(event.getRollbackType()), 
