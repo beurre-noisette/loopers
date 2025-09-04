@@ -20,7 +20,7 @@ spring:
     consumer:
       group-id: loopers-default-consumer
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-serializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       properties:
         enable-auto-commit: false
     listener:
@@ -31,7 +31,7 @@ spring.config.activate.on-profile: local, test
 
 spring:
   kafka:
-    bootstrap-servers: localhost:19092
+    bootstrap-servers: localhost:9092
     admin:
       properties:
         bootstrap.servers: kafka:9092

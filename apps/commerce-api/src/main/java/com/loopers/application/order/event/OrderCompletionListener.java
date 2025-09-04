@@ -115,13 +115,21 @@ public class OrderCompletionListener {
     
     private void publishOrderCompletedToKafka(PaymentCompletedEvent paymentEvent, Order order) {
         try {
+            List<OrderCompletedKafkaEvent.OrderLineItem> lineItems = order.getOrderItems().getItems().stream()
+                    .map(item -> OrderCompletedKafkaEvent.OrderLineItem.builder()
+                            .productId(item.productId())
+                            .quantity(item.quantity())
+                            .price(item.unitPrice().longValue())
+                            .build())
+                    .toList();
+            
             OrderCompletedKafkaEvent kafkaEvent = OrderCompletedKafkaEvent.builder()
                     .eventId(UUID.randomUUID().toString())
                     .aggregateId(order.getId())
                     .occurredAt(ZonedDateTime.now())
                     .orderId(order.getId())
                     .userId(order.getUserId())
-                    .items(order.getOrderItems().getItems())
+                    .items(lineItems)
                     .build();
                     
             kafkaEventPublisher.publishOrderCompletedEvent(kafkaEvent);

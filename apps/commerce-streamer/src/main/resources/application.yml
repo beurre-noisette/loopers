@@ -1,4 +1,5 @@
 server:
+  port: 8090
   shutdown: graceful
   tomcat:
     threads:
@@ -14,7 +15,7 @@ spring:
   main:
     web-application-type: servlet
   application:
-    name: commerce-api
+    name: commerce-streamer
   profiles:
     active: local
   config:
@@ -23,11 +24,60 @@ spring:
       - redis.yml
       - kafka.yml
       - logging.yml
-      - monitoring.yml
 
-demo-kafka:
-  test:
-    topic-name: demo.internal.topic-v1
+datasource:
+  mysql-jpa:
+    main:
+      jdbc-url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/loopers
+      username: ${MYSQL_USER:application}
+      password: "${MYSQL_PWD:application}"
+  redis:
+    database: 0
+    master:
+      host: ${REDIS_MASTER_HOST:localhost}
+      port: ${REDIS_MASTER_PORT:6379}
+    replicas:
+      - host: ${REDIS_REPLICA_HOST:localhost}
+        port: ${REDIS_REPLICA_PORT:6380}
+
+management:
+  server:
+    port: 8091
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name}
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        liveness:
+          show-components: always
+          include:
+            - livenessState
+        readiness:
+          show-components: always
+    prometheus:
+      access: read_only
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  observations:
+    annotations:
+      enabled: true
+    key-values:
+      application: ${spring.application.name}
 
 ---
 spring:
