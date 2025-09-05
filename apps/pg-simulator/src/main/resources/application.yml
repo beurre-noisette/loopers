@@ -19,7 +19,7 @@ spring:
   main:
     web-application-type: servlet
   application:
-    name: commerce-api
+    name: pg-simulator
   profiles:
     active: local
   config:

@@ -1,5 +1,7 @@
 package com.loopers.application.product;
 
+import com.loopers.infrastructure.kafka.KafkaEventPublisher;
+import com.loopers.infrastructure.kafka.event.ProductViewedKafkaEvent;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +12,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -18,12 +22,15 @@ public class ProductQuery {
     
     private final ProductQueryRepository productQueryRepository;
     private final ProductQueryCacheRepository productQueryCacheRepository;
+    private final KafkaEventPublisher kafkaEventPublisher;
     
     @Autowired
     public ProductQuery(ProductQueryRepository productQueryRepository,
-                       ProductQueryCacheRepository productQueryCacheRepository) {
+                       ProductQueryCacheRepository productQueryCacheRepository,
+                       KafkaEventPublisher kafkaEventPublisher) {
         this.productQueryRepository = productQueryRepository;
         this.productQueryCacheRepository = productQueryCacheRepository;
+        this.kafkaEventPublisher = kafkaEventPublisher;
     }
     
     public ProductListResult getProducts(Long brandId, String sort, int page, int size) {
@@ -47,26 +54,50 @@ public class ProductQuery {
     }
     
     public ProductDetailResult getProductDetail(Long productId) {
-        return productQueryRepository.findProductDetailById(productId)
+        ProductDetailResult result = productQueryRepository.findProductDetailById(productId)
             .map(ProductDetailResult::from)
             .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
+        
+        publishProductViewedEvent(productId);
+        
+        return result;
     }
     
     public ProductDetailResult getProductDetailWithCache(Long productId) {
         log.debug("DTO 캐시를 사용한 상품 상세 조회 시작 - Product ID: {}", productId);
         
-        return productQueryCacheRepository.findDetailById(productId)
+        ProductDetailResult result = productQueryCacheRepository.findDetailById(productId)
                 .orElseGet(() -> {
                     log.debug("Cache Miss - Product ID: {}, DB에서 조회", productId);
                     
-                    ProductDetailResult result = productQueryRepository.findProductDetailById(productId)
+                    ProductDetailResult detailResult = productQueryRepository.findProductDetailById(productId)
                             .map(ProductDetailResult::from)
                             .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
                     
-                    productQueryCacheRepository.saveDetail(productId, result);
+                    productQueryCacheRepository.saveDetail(productId, detailResult);
                     
-                    return result;
+                    return detailResult;
                 });
+        
+        publishProductViewedEvent(productId);
+        
+        return result;
+    }
+    
+    private void publishProductViewedEvent(Long productId) {
+        try {
+            ProductViewedKafkaEvent event = ProductViewedKafkaEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .aggregateId(productId)
+                    .productId(productId)
+                    .occurredAt(ZonedDateTime.now())
+                    .build();
+            
+            kafkaEventPublisher.publishProductViewedEvent(event);
+            log.debug("상품 조회 카프카 이벤트 발행 - productId: {}", productId);
+        } catch (Exception e) {
+            log.error("상품 조회 카프카 이벤트 발행 실패 - productId: {}", productId, e);
+        }
     }
     
     public void evictProductDetailCache(Long productId) {

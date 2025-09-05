@@ -98,7 +98,7 @@ public class PaymentStatusCheckScheduler {
             if (payment.getTransactionKey() != null) {
                 response = pgClient.getTransaction("looCommerce", payment.getTransactionKey());
             } else {
-                response = pgClient.getTransactionByOrderId("looCommerce", String.valueOf(payment.getOrderId()));
+                response = pgClient.getTransactionByOrderId("looCommerce", String.format("%07d", payment.getOrderId()));
             }
 
             if (response.meta().result() == ApiResponse.Metadata.Result.SUCCESS) {

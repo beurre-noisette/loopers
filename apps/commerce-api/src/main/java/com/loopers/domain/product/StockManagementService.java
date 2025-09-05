@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class StockManagementService {
     }
 
     @Transactional
-    public void increaseStock(List<StockReservation> reservations) {
+    public List<StockReservationResult> increaseStock(List<StockReservation> reservations) {
         Map<Long, Integer> productQuantityMap = reservations.stream()
                 .collect(Collectors.groupingBy(
                         StockReservation::getProductId,
@@ -55,6 +56,8 @@ public class StockManagementService {
                 .sorted()
                 .toList();
 
+        List<StockReservationResult> stockReservationResults = new ArrayList<>();
+        
         for (Long productId : sortedProductIds) {
             Integer quantity = productQuantityMap.get(productId);
             
@@ -63,6 +66,14 @@ public class StockManagementService {
 
             lockedProduct.increaseStock(quantity);
             productRepository.save(lockedProduct);
+            
+            stockReservationResults.add(StockReservationResult.of(
+                    lockedProduct.getId(),
+                    quantity,
+                    lockedProduct.getStock()
+            ));
         }
+        
+        return stockReservationResults;
     }
 }

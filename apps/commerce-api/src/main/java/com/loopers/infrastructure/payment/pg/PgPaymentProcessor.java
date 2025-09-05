@@ -78,7 +78,7 @@ public class PgPaymentProcessor implements PaymentProcessor {
 
     private PaymentResult requestPgPayment(CardPaymentCommand cardCommand) {
         PgPaymentDto.PaymentRequest request = PgPaymentDto.PaymentRequest.of(
-                String.valueOf(cardCommand.getOrderId()),
+                String.format("%07d", cardCommand.getOrderId()),
                 PgPaymentDto.CardType.valueOf(cardCommand.getCardType()),
                 cardCommand.getCardNo(),
                 cardCommand.getAmount(),
