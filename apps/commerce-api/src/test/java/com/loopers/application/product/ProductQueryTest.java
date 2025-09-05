@@ -1,5 +1,6 @@
 package com.loopers.application.product;
 
+import com.loopers.infrastructure.kafka.KafkaEventPublisher;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import org.jetbrains.annotations.NotNull;
@@ -35,11 +36,14 @@ class ProductQueryTest {
     @Mock
     private ProductQueryCacheRepository productQueryCacheRepository;
 
+    @Mock
+    private KafkaEventPublisher kafkaEventPublisher;
+
     private ProductQuery productQuery;
 
     @BeforeEach
     void setUp() {
-        productQuery = new ProductQuery(productQueryRepository, productQueryCacheRepository);
+        productQuery = new ProductQuery(productQueryRepository, productQueryCacheRepository, kafkaEventPublisher);
     }
 
     @Test

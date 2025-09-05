@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -30,7 +29,7 @@ public class OrderRollbackEventListener {
     
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void handleOrderRollback(OrderRollbackEvent event) {
         log.info("주문 롤백 이벤트 수신 - orderId: {}, correlationId: {}, rollbackType: {}, reason: {}", 
                 event.getOrderId(), event.getCorrelationId(), event.getRollbackType(), event.getRollbackReason());
