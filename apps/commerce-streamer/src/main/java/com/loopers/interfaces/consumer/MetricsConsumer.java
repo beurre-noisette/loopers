@@ -68,7 +68,7 @@ public class MetricsConsumer {
         
         String eventId = event.getEventId();
         
-        if (idempotencyService.isAlreadyProcessed(eventId, CONSUMER_GROUP)) {
+        if (!idempotencyService.tryMarkAsProcessed(eventId, CONSUMER_GROUP)) {
             log.debug("이미 처리된 이벤트 스킵 - eventId: {}", eventId);
             return;
         }
@@ -81,8 +81,6 @@ public class MetricsConsumer {
                 case ProductViewedKafkaEvent viewEvent -> processViewEvent(viewEvent);
                 default -> log.debug("처리하지 않는 이벤트 타입 - type: {}", event.getEventType());
             }
-            
-            idempotencyService.markAsProcessed(eventId, CONSUMER_GROUP);
             
         } catch (Exception e) {
             log.error("메트릭 업데이트 실패 - eventId: {}, type: {}", 

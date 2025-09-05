@@ -67,7 +67,7 @@ public class AuditLogConsumer {
         
         String eventId = event.getEventId();
         
-        if (idempotencyService.isAlreadyProcessed(eventId, CONSUMER_GROUP)) {
+        if (!idempotencyService.tryMarkAsProcessed(eventId, CONSUMER_GROUP)) {
             log.debug("이미 처리된 이벤트 스킵 - eventId: {}", eventId);
             return;
         }
@@ -87,7 +87,6 @@ public class AuditLogConsumer {
                     .build();
             
             eventLogRepository.save(eventLog);
-            idempotencyService.markAsProcessed(eventId, CONSUMER_GROUP);
             
             log.debug("이벤트 로그 저장 완료 - eventId: {}, type: {}, aggregateId: {}", 
                     eventId, event.getEventType(), event.getAggregateId());
