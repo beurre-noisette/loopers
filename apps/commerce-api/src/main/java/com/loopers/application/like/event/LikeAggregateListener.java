@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -35,7 +36,7 @@ public class LikeAggregateListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleLikeCreated(LikeCreatedEvent event) {
         log.info("좋아요 생성 이벤트 수신 - userId: {}, targetType: {}, targetId: {}, correlationId: {}",
                 event.getUserId(), event.getTargetType(), event.getTargetId(), event.getCorrelationId());
@@ -59,7 +60,7 @@ public class LikeAggregateListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleLikeCancelled(LikeCancelledEvent event) {
         log.info("좋아요 취소 이벤트 수신 - userId: {}, targetType: {}, targetId: {}, correlationId: {}",
                 event.getUserId(), event.getTargetType(), event.getTargetId(), event.getCorrelationId());
