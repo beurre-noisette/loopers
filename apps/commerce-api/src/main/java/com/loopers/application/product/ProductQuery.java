@@ -1,5 +1,6 @@
 package com.loopers.application.product;
 
+import com.loopers.domain.ranking.RankingService;
 import com.loopers.infrastructure.kafka.KafkaEventPublisher;
 import com.loopers.infrastructure.kafka.event.ProductViewedKafkaEvent;
 import com.loopers.support.error.CoreException;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -23,14 +25,17 @@ public class ProductQuery {
     private final ProductQueryRepository productQueryRepository;
     private final ProductQueryCacheRepository productQueryCacheRepository;
     private final KafkaEventPublisher kafkaEventPublisher;
+    private final RankingService rankingService;
     
     @Autowired
     public ProductQuery(ProductQueryRepository productQueryRepository,
                        ProductQueryCacheRepository productQueryCacheRepository,
-                       KafkaEventPublisher kafkaEventPublisher) {
+                       KafkaEventPublisher kafkaEventPublisher,
+                       RankingService rankingService) {
         this.productQueryRepository = productQueryRepository;
         this.productQueryCacheRepository = productQueryCacheRepository;
         this.kafkaEventPublisher = kafkaEventPublisher;
+        this.rankingService = rankingService;
     }
     
     public ProductListResult getProducts(Long brandId, String sort, int page, int size) {
@@ -54,9 +59,13 @@ public class ProductQuery {
     }
     
     public ProductDetailResult getProductDetail(Long productId) {
-        ProductDetailResult result = productQueryRepository.findProductDetailById(productId)
-            .map(ProductDetailResult::from)
+        ProductQueryRepository.ProductDetailQueryData data = productQueryRepository.findProductDetailById(productId)
             .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
+        
+        Long rank = rankingService.getProductRank(productId, LocalDate.now());
+        RankingInfo ranking = rank != null ? new RankingInfo(rank) : null;
+        
+        ProductDetailResult result = ProductDetailResult.withRanking(data, ranking);
         
         publishProductViewedEvent(productId);
         
@@ -70,9 +79,13 @@ public class ProductQuery {
                 .orElseGet(() -> {
                     log.debug("Cache Miss - Product ID: {}, DB에서 조회", productId);
                     
-                    ProductDetailResult detailResult = productQueryRepository.findProductDetailById(productId)
-                            .map(ProductDetailResult::from)
+                    ProductQueryRepository.ProductDetailQueryData data = productQueryRepository.findProductDetailById(productId)
                             .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
+                    
+                    Long rank = rankingService.getProductRank(productId, LocalDate.now());
+                    RankingInfo ranking = rank != null ? new RankingInfo(rank) : null;
+                    
+                    ProductDetailResult detailResult = ProductDetailResult.withRanking(data, ranking);
                     
                     productQueryCacheRepository.saveDetail(productId, detailResult);
                     
@@ -135,7 +148,8 @@ public class ProductQuery {
         BigDecimal price,
         Integer stock,
         BrandInfo brand,
-        Integer likeCount
+        Integer likeCount,
+        RankingInfo ranking
     ) {
         public static ProductDetailResult from(ProductQueryRepository.ProductDetailQueryData data) {
             return new ProductDetailResult(
@@ -145,10 +159,31 @@ public class ProductQuery {
                 data.price(),
                 data.stock(),
                 new BrandInfo(data.brandId(), data.brandName(), data.brandDescription()),
-                data.likeCount()
+                data.likeCount(),
+                null
+            );
+        }
+        
+        public static ProductDetailResult withRanking(
+                ProductQueryRepository.ProductDetailQueryData data,
+                RankingInfo ranking
+        ) {
+            return new ProductDetailResult(
+                data.id(),
+                data.name(),
+                data.description(),
+                data.price(),
+                data.stock(),
+                new BrandInfo(data.brandId(), data.brandName(), data.brandDescription()),
+                data.likeCount(),
+                ranking
             );
         }
     }
+    
+    public record RankingInfo(
+        Long rank
+    ) {}
     
     public record BrandInfo(
         Long id,
