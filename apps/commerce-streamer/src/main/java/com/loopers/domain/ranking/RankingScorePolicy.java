@@ -10,7 +10,8 @@ public class RankingScorePolicy {
     private static final double ORDER_WEIGHT = 0.6;
     
     private static final double VIEW_SCORE = 1.0;
-    private static final double LIKE_SCORE = 1.0;
+    private static final double LIKE_SCORE = 3.0;
+    private static final double ORDER_SCORE = 7.0;
     
     public double calculateViewScore() {
         return VIEW_SCORE * VIEW_WEIGHT;
@@ -21,7 +22,7 @@ public class RankingScorePolicy {
     }
     
     public double calculateOrderScore(int quantity, Long amount) {
-        double baseScore = quantity * ORDER_WEIGHT;
+        double baseScore = ORDER_SCORE * quantity * ORDER_WEIGHT;
         
         if (amount != null && amount > 0) {
             double amountBonus = 1 + Math.log10(amount.doubleValue() / 10000);
