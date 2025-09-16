@@ -1,5 +1,6 @@
 package com.loopers.application.product;
 
+import com.loopers.domain.ranking.RankingService;
 import com.loopers.infrastructure.kafka.KafkaEventPublisher;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
@@ -39,6 +40,9 @@ class ProductQueryTest {
     @Mock
     private KafkaEventPublisher kafkaEventPublisher;
 
+    @Mock
+    private RankingService rankingService;
+
     private ProductQuery productQuery;
 
     @BeforeEach
@@ -46,7 +50,8 @@ class ProductQueryTest {
         productQuery = new ProductQuery(
                 productQueryRepository,
                 productQueryCacheRepository,
-                kafkaEventPublisher
+                kafkaEventPublisher,
+                rankingService
         );
     }
 

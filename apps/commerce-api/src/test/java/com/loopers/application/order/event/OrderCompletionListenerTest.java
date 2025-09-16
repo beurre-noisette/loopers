@@ -63,7 +63,7 @@ class OrderCompletionListenerTest {
             testOrder.processingPayment();
             
             when(orderService.findById(testOrder.getId())).thenReturn(testOrder);
-            doNothing().when(stockReservationService).confirmReservation(testOrder.getId());
+            when(stockReservationService.confirmReservation(testOrder.getId())).thenReturn(List.of());
             
             PaymentCompletedEvent event = PaymentCompletedEvent.of(
                     "correlation-123",
@@ -108,7 +108,7 @@ class OrderCompletionListenerTest {
             testOrder.processingPayment();
             
             when(orderService.findById(testOrder.getId())).thenReturn(testOrder);
-            doNothing().when(stockReservationService).releaseReservation(testOrder.getId());
+            when(stockReservationService.releaseReservation(testOrder.getId())).thenReturn(List.of());
             
             PaymentFailedEvent event = PaymentFailedEvent.of(
                     "correlation-456",

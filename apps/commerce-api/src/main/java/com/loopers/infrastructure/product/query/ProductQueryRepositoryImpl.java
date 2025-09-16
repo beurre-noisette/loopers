@@ -93,6 +93,33 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
         return Optional.ofNullable(result);
     }
+    
+    @Override
+    public List<ProductQueryData> findProductsByIds(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+        
+        return jpaQueryFactory
+            .select(Projections.constructor(ProductQueryData.class,
+                product.id,
+                product.name,
+                product.description,
+                product.price,
+                product.stock,
+                brand.id,
+                brand.name,
+                product.likeCount
+            ))
+            .from(product)
+            .join(product.brand, brand)
+            .where(
+                product.id.in(productIds),
+                product.deletedAt.isNull(),
+                brand.deletedAt.isNull()
+            )
+            .fetch();
+    }
 
     private static BooleanExpression brandIdEq(Long brandId) {
         return brandId != null ? product.brand.id.eq(brandId) : null;
